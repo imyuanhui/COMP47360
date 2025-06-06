@@ -1,0 +1,24 @@
+# Node (React)
+node_modules/
+build/
+.env
+
+# Java (Spring Boot)
+target/
+*.class
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pkl
+*.ipynb_checkpoints
+
+# System / Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Data / Models
+data/*.csv
+models/*
