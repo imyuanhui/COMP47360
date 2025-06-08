@@ -13,5 +13,5 @@ public class WeatherDto {
     private double windSpeed;
     private int weatherId;
     private String condition;
-    private LocalDateTime lastUpdatedTime;
+    private LocalDateTime time;
 }
