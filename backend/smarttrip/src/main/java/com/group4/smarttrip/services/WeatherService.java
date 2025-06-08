@@ -7,6 +7,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -55,7 +56,33 @@ public class WeatherService {
         }
     }
 
-//    public WeatherDto getForecastWeather(double lat, double lon, Long timestamp) {
-//        String url = String.format("%s/timemachine?lat=%.4f&lon=%.4f&appid=%s&units=%s", apiUrl, lat, lon, apiKey, units);
-//    }
+    @Cacheable(value = "weatherCache", key = "'manhattan_' + #dt")
+    public WeatherDto getForecastWeather(Long dt) {
+        return getForecastWeather(defaultLat, defaultLon, dt);
+    }
+
+    @Cacheable(value = "weatherCache", key = "#lat + '_' + #lon + '_' + #dt")
+    public WeatherDto getForecastWeather(double lat, double lon, Long dt) {
+        String url = String.format("%s/timemachine?lat=%.4f&lon=%.4f&dt=%s&appid=%s&units=%s",
+                apiUrl, lat, lon, dt, apiKey, units);
+
+        try {
+            WeatherApiResponse response = restTemplate.getForObject(url, WeatherApiResponse.class);
+            WeatherApiResponse.DataPoint forecast = response.getData().get(0);
+            WeatherApiResponse.Weather weather = forecast.getWeather().get(0);
+
+            LocalDateTime localDateTime = new Timestamp(forecast.getDt() * 1000).toLocalDateTime();
+
+            return new WeatherDto(
+                    forecast.getTemp(),
+                    forecast.getHumidity(),
+                    forecast.getWind_speed(),
+                    weather.getId(),
+                    weather.getMain(),
+                    localDateTime
+            );
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Weather API return invalid response");
+        }
+    }
 }
