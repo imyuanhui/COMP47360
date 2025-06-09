@@ -10,6 +10,9 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel =  "spring")
 public interface UserMapper {
     UserDto toDto(User user);
+
+    @org.mapstruct.Mapping(target = "provider", constant = "local")
     User toEntity(RegisterUserRequest request);
+
     void update(UpdateUserRequest request, @MappingTarget User user);
 }
