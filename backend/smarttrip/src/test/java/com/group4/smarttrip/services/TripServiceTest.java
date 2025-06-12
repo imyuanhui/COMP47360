@@ -91,6 +91,8 @@ public class TripServiceTest {
         request2.setThumbnailUrl("test.com");
         tripService.createTrip(tripMapper.toEntity(request2), email);
 
+
+
         int page = 1;
 
         List<TripDto> trips = tripService.getUserTrips(email, page);
@@ -122,7 +124,8 @@ public class TripServiceTest {
 
     @Test
     void testGetTripById_NotFound() {
-        assertThrows(IllegalArgumentException.class, () -> tripService.getTripById(1L));
+        assertThrows(IllegalArgumentException.class, () ->
+                tripService.getTripById(1L));
     }
 
     @Test
@@ -140,11 +143,13 @@ public class TripServiceTest {
 
         tripService.deleteTrip(tripId);
 
-        assertThrows(IllegalArgumentException.class, () -> tripService.getTripById(tripId));
+        assertThrows(IllegalArgumentException.class, () ->
+                tripService.getTripById(tripId));
     }
 
     @Test
     void testDeleteTrip_NotFound() {
-        assertThrows(IllegalArgumentException.class, () -> tripService.deleteTrip(1L));
+        assertThrows(IllegalArgumentException.class, () ->
+                tripService.deleteTrip(1L));
     }
 }
