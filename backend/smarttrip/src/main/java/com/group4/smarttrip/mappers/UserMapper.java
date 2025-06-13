@@ -7,7 +7,8 @@ import com.group4.smarttrip.entities.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 
-@Mapper(componentModel =  "spring")
+@Mapper(componentModel =  "spring",
+        nullValuePropertyMappingStrategy = org.mapstruct.NullValuePropertyMappingStrategy.IGNORE)
 public interface UserMapper {
     UserDto toDto(User user);
 
