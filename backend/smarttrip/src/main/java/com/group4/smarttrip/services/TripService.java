@@ -33,27 +33,14 @@ public class TripService {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new IllegalArgumentException("Trip not found"));
 
-        if (request.getTripName() != null) {
-            trip.setTripName(request.getTripName());
-        }
-        if (request.getStartDateTime() != null) {
-            trip.setStartDateTime(request.getStartDateTime());
-        }
-        if (request.getEndDateTime() != null) {
-            trip.setEndDateTime(request.getEndDateTime());
-        }
-        if (request.getNumTravellers() != null) {
-            trip.setNumTravellers(request.getNumTravellers());
-        }
-        if (request.getThumbnailUrl() != null) {
-            trip.setThumbnailUrl(request.getThumbnailUrl());
-        }
+        tripMapper.updateTrip(request, trip);
 
         trip.setUpdatedAt(LocalDateTime.now());
+
         Trip updatedTrip = tripRepository.save(trip);
         return tripMapper.toDto(updatedTrip);
-
     }
+
 
     public List<TripDto> getUserTrips(String email, int page) {
         int pageSize = 10;

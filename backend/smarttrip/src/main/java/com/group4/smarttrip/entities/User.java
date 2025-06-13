@@ -49,6 +49,10 @@ public class User {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+
+        if (provider == null) {
+            provider = "local";
+        }
     }
 
     @Override
