@@ -44,8 +44,8 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
-        String accessToken = jwtUtil.generateToken(user.getEmail());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+        String accessToken = jwtUtil.generateToken(user.getId());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
         UserDto userDto = userMapper.toDto(user);
 
         return Map.of(
@@ -55,25 +55,17 @@ public class AuthService {
         );
     }
 
-    public Map<String, ?> refreshToken(String refreshToken) {
+    public Map<String, String> refreshToken(String refreshToken) {
         if (!jwtUtil.validateToken(refreshToken)) {
             throw new IllegalArgumentException("Invalid refresh token");
         }
 
-        String email = jwtUtil.extractEmail(refreshToken);
-        User user = userRepository.findByEmail(email)
+        Long id = jwtUtil.extractUserId(refreshToken);
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        String newAccessToken = jwtUtil.generateToken(email);
-        String newRefreshToken = jwtUtil.generateRefreshToken(email);
-        UserDto userDto = userMapper.toDto(user);
+        String newAccessToken = jwtUtil.generateToken(id);
 
-        return Map.of(
-                "accessToken", newAccessToken,
-                "refreshToken", newRefreshToken,
-                "user", userDto
-        );
+        return Map.of("accessToken", newAccessToken);
     }
-
-
 }
