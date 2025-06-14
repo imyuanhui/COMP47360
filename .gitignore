@@ -11,8 +11,8 @@ target/
 # Python
 __pycache__/
 *.pyc
-*.pkl
-*.ipynb_checkpoints
+# *.pkl
+# *.ipynb_checkpoints
 
 # System / Editor
 .vscode/
@@ -20,5 +20,5 @@ __pycache__/
 .DS_Store
 
 # Data / Models
-data/*.csv
-models/*
+# data/*.csv
+# models/*
