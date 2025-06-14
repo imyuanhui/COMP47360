@@ -44,7 +44,7 @@ public class ProfileController {
 
     @PatchMapping
     private ResponseEntity<?> editProfile(@RequestBody UpdateUserRequest updateRequest,
-                                          HttpServletRequest request) {
+            HttpServletRequest request) {
         try {
             Long id = extractUserId(request);
             UserDto updatedUser = userService.updateUser(id, updateRequest);
@@ -69,7 +69,7 @@ public class ProfileController {
 
     @PutMapping("/change-password")
     private ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest passwordRequest,
-                                             HttpServletRequest request) {
+            HttpServletRequest request) {
         try {
             Long id = extractUserId(request);
             userService.changePassword(id, passwordRequest);
