@@ -4,11 +4,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Getter
 @Entity
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "zones")
