@@ -1,6 +1,6 @@
 package com.group4.smarttrip.services;
 
-import com.group4.smarttrip.dtos.CreateUpdateTripRequest;
+import com.group4.smarttrip.dtos.CreateTripRequest;
 import com.group4.smarttrip.dtos.TripDto;
 import com.group4.smarttrip.entities.Trip;
 import com.group4.smarttrip.mappers.TripMapper;
@@ -20,8 +20,8 @@ public class TripService {
     private final TripRepository tripRepository;
     private final TripMapper tripMapper;
 
-    public TripDto createTrip(Trip trip, String email) {
-        trip.setUserEmail(email);
+    public TripDto createTrip(Trip trip, Long userId) {
+        trip.setUserId(userId);
         trip.setCreatedAt(LocalDateTime.now());
         trip.setUpdatedAt(LocalDateTime.now());
 
@@ -29,24 +29,24 @@ public class TripService {
         return tripMapper.toDto(savedTrip);
     }
 
-    public TripDto updateTrip(Long tripId, CreateUpdateTripRequest request) {
-        Trip trip = tripRepository.findById(tripId)
-                .orElseThrow(() -> new IllegalArgumentException("Trip not found"));
+//    public TripDto updateTrip(Long tripId, CreateTripRequest request) {
+//        Trip trip = tripRepository.findById(tripId)
+//                .orElseThrow(() -> new IllegalArgumentException("Trip not found"));
+//
+//        tripMapper.updateTrip(request, trip);
+//
+//        trip.setUpdatedAt(LocalDateTime.now());
+//
+//        Trip updatedTrip = tripRepository.save(trip);
+//        return tripMapper.toDto(updatedTrip);
+//    }
 
-        tripMapper.updateTrip(request, trip);
 
-        trip.setUpdatedAt(LocalDateTime.now());
-
-        Trip updatedTrip = tripRepository.save(trip);
-        return tripMapper.toDto(updatedTrip);
-    }
-
-
-    public List<TripDto> getUserTrips(String email, int page) {
+    public List<TripDto> getUserTrips(Long userId, int page) {
         int pageSize = 10;
         PageRequest pageRequest = PageRequest.of(page - 1, pageSize, Sort.by("updatedAt").descending());
 
-        return tripRepository.findAllByUserEmail(email, pageRequest)
+        return tripRepository.findAllByUserId(userId, pageRequest)
                 .stream()
                 .map(tripMapper::toDto)
                 .collect(Collectors.toList());
