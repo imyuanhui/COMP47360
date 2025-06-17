@@ -17,7 +17,7 @@ public class Trip {
     private Long tripId;
 
     @Column(nullable = false, updatable = false)
-    private String userEmail;
+    private Long userId;
 
     @Column(nullable = false)
     private String tripName = "Amazing Trip";
