@@ -4,6 +4,8 @@ import com.group4.smarttrip.dtos.CreateTripRequest;
 import com.group4.smarttrip.dtos.TripDto;
 import com.group4.smarttrip.entities.Place;
 import com.group4.smarttrip.entities.Trip;
+import com.group4.smarttrip.entities.TripVisit;
+import com.group4.smarttrip.entities.TripVisitId;
 import com.group4.smarttrip.mappers.TripMapper;
 import com.group4.smarttrip.repositories.PlaceRepository;
 import com.group4.smarttrip.repositories.TripRepository;
@@ -62,29 +64,29 @@ public class TripServiceTest {
         assertNotNull(newTripDto.getUpdatedAt());
     }
 
-//    @Test
-//    void testUpdateTrip() {
-//        CreateTripRequest request1 = new CreateTripRequest();
-//        request1.setTripName("Old Trip Name");
-//        request1.setStartDateTime(LocalDateTime.of(2025, 6, 20, 1, 34, 20));
-//        request1.setEndDateTime(LocalDateTime.of(2025, 6, 20, 4, 34, 20));
-//        request1.setNumTravellers(1);
-//        request1.setThumbnailUrl("test.com");
-//        tripService.createTrip(tripMapper.toEntity(request1), userId);
-//
-//        Trip trip = tripRepository.findAll().get(0);
-//        Long tripId = trip.getTripId();
-//        LocalDateTime oldUpdatedAt = trip.getUpdatedAt();
-//
-//        CreateTripRequest request2 = new CreateUTripRequest();
-//        request2.setTripName("New Trip Name");
-//
-//        TripDto updateTripDto = tripService.updateTrip(tripId, request2);
-//
-//        assertEquals("New Trip Name", updateTripDto.getTripName());
-//        assertEquals(tripId, updateTripDto.getTripId());
-//        assertNotEquals(oldUpdatedAt, updateTripDto.getUpdatedAt());
-//    }
+    @Test
+    void testUpdateTrip() {
+        CreateTripRequest request1 = new CreateTripRequest();
+        request1.setTripName("Old Trip Name");
+        request1.setStartDateTime(LocalDateTime.of(2025, 6, 20, 1, 34, 20));
+        request1.setEndDateTime(LocalDateTime.of(2025, 6, 20, 4, 34, 20));
+        request1.setNumTravellers(1);
+        request1.setThumbnailUrl("test.com");
+        tripService.createTrip(tripMapper.toEntity(request1), userId);
+
+        Trip trip = tripRepository.findAll().get(0);
+        Long tripId = trip.getTripId();
+        LocalDateTime oldUpdatedAt = trip.getUpdatedAt();
+
+        CreateTripRequest request2 = new CreateTripRequest();
+        request2.setTripName("New Trip Name");
+
+        TripDto updateTripDto = tripService.updateTrip(tripId, request2);
+
+        assertEquals("New Trip Name", updateTripDto.getTripName());
+        assertEquals(tripId, updateTripDto.getTripId());
+        assertNotEquals(oldUpdatedAt, updateTripDto.getUpdatedAt());
+    }
 
     @Test
     void testGetUserTrips() {
@@ -165,6 +167,67 @@ public class TripServiceTest {
     }
 
     @Test
+    void testCreateOrUpdateTripVisit() {
+        // Step 1: create trip
+        CreateTripRequest request = new CreateTripRequest();
+        request.setTripName("Trip with Visit");
+        request.setStartDateTime(LocalDateTime.of(2025, 6, 20, 1, 34, 20));
+        request.setEndDateTime(LocalDateTime.of(2025, 6, 20, 4, 34, 20));
+        request.setNumTravellers(1);
+        request.setThumbnailUrl("test.com");
+
+        TripDto tripDto = tripService.createTrip(tripMapper.toEntity(request), userId);
+        Long tripId = tripDto.getTripId();
+
+        Place place = placeRepository.findAll().getFirst();
+        Long placeId = place.getPlaceId();
+
+        // First call: should create
+        LocalDateTime time1 = LocalDateTime.of(2025, 6, 20, 14, 0);
+        tripService.createOrUpdateTripVisit(tripId, placeId, time1);
+
+        TripVisitId id = new TripVisitId(tripId, placeId);
+        TripVisit createdVisit = tripVisitRepository.findById(id).orElseThrow();
+        assertEquals(time1, createdVisit.getVisitTime());
+
+        // Second call: should update
+        LocalDateTime time2 = LocalDateTime.of(2025, 6, 21, 10, 0);
+        tripService.createOrUpdateTripVisit(tripId, placeId, time2);
+
+        TripVisit updatedVisit = tripVisitRepository.findById(id).orElseThrow();
+        assertEquals(time2, updatedVisit.getVisitTime());
+    }
+
+    @Test
+    void testDeleteTripVisit() {
+        CreateTripRequest request = new CreateTripRequest();
+        request.setTripName("Trip with Visit");
+        request.setStartDateTime(LocalDateTime.of(2025, 6, 20, 1, 34, 20));
+        request.setEndDateTime(LocalDateTime.of(2025, 6, 20, 4, 34, 20));
+        request.setNumTravellers(1);
+        request.setThumbnailUrl("test.com");
+
+        TripDto tripDto = tripService.createTrip(tripMapper.toEntity(request), userId);
+        Long tripId = tripDto.getTripId();
+
+        Place place = placeRepository.findAll().getFirst();
+        Long placeId = place.getPlaceId();
+
+        LocalDateTime visitTime = LocalDateTime.of(2025, 6, 20, 14, 0);
+
+        tripService.createOrUpdateTripVisit(tripId, placeId, visitTime);
+
+        tripService.deleteTripVisit(tripId, placeId);
+
+        Map<String, Object> tripDetail = tripService.viewTrip(tripId);
+
+        TripDto resultTripDto = (TripDto) tripDetail.get("basicInfo");
+        assertEquals(tripDto.getTripName(), resultTripDto.getTripName());
+        List<Map<String, Object>> visits = (List<Map<String, Object>>) tripDetail.get("visits");
+        assertEquals(0, visits.size());
+    }
+
+    @Test
     void testCreateTripVisitAndViewTrip() {
         // Step 1: create trip
         CreateTripRequest request = new CreateTripRequest();
@@ -188,8 +251,8 @@ public class TripServiceTest {
         LocalDateTime visitTime2 = LocalDateTime.of(2025, 6, 20, 3, 0, 0);
 
         // Step 3: add two TripVisit
-        tripService.createTripVisit(tripId, firstPlace.getPlaceId(), visitTime1);
-        tripService.createTripVisit(tripId, secondPlace.getPlaceId(), visitTime2);
+        tripService.createOrUpdateTripVisit(tripId, firstPlace.getPlaceId(), visitTime1);
+        tripService.createOrUpdateTripVisit(tripId, secondPlace.getPlaceId(), visitTime2);
 
         // Step 4: get and validate viewTrip
         Map<String, Object> tripDetail = tripService.viewTrip(tripId);
