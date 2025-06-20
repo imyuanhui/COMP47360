@@ -2,9 +2,12 @@ package com.group4.smarttrip.services;
 
 import com.group4.smarttrip.dtos.CreateTripRequest;
 import com.group4.smarttrip.dtos.TripDto;
+import com.group4.smarttrip.entities.Place;
 import com.group4.smarttrip.entities.Trip;
 import com.group4.smarttrip.mappers.TripMapper;
+import com.group4.smarttrip.repositories.PlaceRepository;
 import com.group4.smarttrip.repositories.TripRepository;
+import com.group4.smarttrip.repositories.TripVisitRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,12 +29,20 @@ public class TripServiceTest {
     private TripRepository tripRepository;
 
     @Autowired
+    private PlaceRepository placeRepository;
+
+    @Autowired
+    private TripVisitRepository tripVisitRepository;
+
+    @Autowired
     private TripMapper tripMapper;
 
     @BeforeEach
     void clearAll() {
+        tripVisitRepository.deleteAll();
         tripRepository.deleteAll();
     }
+
 
     private Long userId = 1L;
 
@@ -150,5 +162,54 @@ public class TripServiceTest {
     void testDeleteTrip_NotFound() {
         assertThrows(IllegalArgumentException.class, () ->
                 tripService.deleteTrip(1L));
+    }
+
+    @Test
+    void testCreateTripVisitAndViewTrip() {
+        // Step 1: create trip
+        CreateTripRequest request = new CreateTripRequest();
+        request.setTripName("Trip with Visit");
+        request.setStartDateTime(LocalDateTime.of(2025, 6, 20, 1, 34, 20));
+        request.setEndDateTime(LocalDateTime.of(2025, 6, 20, 4, 34, 20));
+        request.setNumTravellers(1);
+        request.setThumbnailUrl("test.com");
+
+        TripDto tripDto = tripService.createTrip(tripMapper.toEntity(request), userId);
+        Long tripId = tripDto.getTripId();
+
+        // Step 2: prepare two places
+        List<Place> places = placeRepository.findAll();
+        assertTrue(places.size() >= 2, "At least two places must exist in the database for this test.");
+
+        Place firstPlace = places.get(0);
+        Place secondPlace = places.get(1);
+
+        LocalDateTime visitTime1 = LocalDateTime.of(2025, 6, 20, 2, 0, 0);
+        LocalDateTime visitTime2 = LocalDateTime.of(2025, 6, 20, 3, 0, 0);
+
+        // Step 3: add two TripVisit
+        tripService.createTripVisit(tripId, firstPlace.getPlaceId(), visitTime1);
+        tripService.createTripVisit(tripId, secondPlace.getPlaceId(), visitTime2);
+
+        // Step 4: get and validate viewTrip
+        Map<String, Object> tripDetail = tripService.viewTrip(tripId);
+
+        TripDto resultTripDto = (TripDto) tripDetail.get("basicInfo");
+        assertEquals(tripDto.getTripName(), resultTripDto.getTripName());
+
+        List<Map<String, Object>> visits = (List<Map<String, Object>>) tripDetail.get("visits");
+        assertEquals(2, visits.size());
+
+        // Step 5: validate first visit
+        Map<String, Object> visit1 = visits.get(0);
+        assertEquals(visitTime1, visit1.get("visitTime"));
+        Place returnedPlace1 = (Place) visit1.get("place");
+        assertEquals(firstPlace.getPlaceName(), returnedPlace1.getPlaceName());
+
+        // Step 6: validate second visit
+        Map<String, Object> visit2 = visits.get(1);
+        assertEquals(visitTime2, visit2.get("visitTime"));
+        Place returnedPlace2 = (Place) visit2.get("place");
+        assertEquals(secondPlace.getPlaceName(), returnedPlace2.getPlaceName());
     }
 }
