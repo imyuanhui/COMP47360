@@ -1,7 +1,9 @@
 package com.group4.smarttrip.services;
 
 import com.group4.smarttrip.dtos.CreateTripRequest;
+import com.group4.smarttrip.dtos.CreateUpdateTripVisitRequest;
 import com.group4.smarttrip.dtos.TripDto;
+import com.group4.smarttrip.dtos.TripVisitDto;
 import com.group4.smarttrip.entities.Place;
 import com.group4.smarttrip.entities.Trip;
 import com.group4.smarttrip.entities.TripVisit;
@@ -168,34 +170,46 @@ public class TripServiceTest {
 
     @Test
     void testCreateOrUpdateTripVisit() {
-        // Step 1: create trip
-        CreateTripRequest request = new CreateTripRequest();
-        request.setTripName("Trip with Visit");
-        request.setStartDateTime(LocalDateTime.of(2025, 6, 20, 1, 34, 20));
-        request.setEndDateTime(LocalDateTime.of(2025, 6, 20, 4, 34, 20));
-        request.setNumTravellers(1);
-        request.setThumbnailUrl("test.com");
+        // Arrange: create a trip
+        CreateTripRequest tripRequest = new CreateTripRequest();
+        tripRequest.setTripName("Trip with Visit");
+        tripRequest.setStartDateTime(LocalDateTime.of(2025, 6, 20, 1, 34, 20));
+        tripRequest.setEndDateTime(LocalDateTime.of(2025, 6, 20, 4, 34, 20));
+        tripRequest.setNumTravellers(1);
+        tripRequest.setThumbnailUrl("test.com");
 
-        TripDto tripDto = tripService.createTrip(tripMapper.toEntity(request), userId);
+        TripDto tripDto = tripService.createTrip(tripMapper.toEntity(tripRequest), userId);
         Long tripId = tripDto.getTripId();
 
-        Place place = placeRepository.findAll().getFirst();
+        Place place = placeRepository.findAll().stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No place found in DB"));
         Long placeId = place.getPlaceId();
 
-        // First call: should create
+        TripVisitId tripVisitId = new TripVisitId(tripId, placeId);
+
+        // Act 1: Create trip visit
         LocalDateTime time1 = LocalDateTime.of(2025, 6, 20, 14, 0);
-        tripService.createOrUpdateTripVisit(tripId, placeId, time1);
+        CreateUpdateTripVisitRequest visitRequest1 = new CreateUpdateTripVisitRequest(tripId, placeId, time1);
+        TripVisitDto createdVisit = tripService.createOrUpdateTripVisit(visitRequest1);
 
-        TripVisitId id = new TripVisitId(tripId, placeId);
-        TripVisit createdVisit = tripVisitRepository.findById(id).orElseThrow();
-        assertEquals(time1, createdVisit.getVisitTime());
+        // Assert creation
+        TripVisit fetchedVisit1 = tripVisitRepository.findById(tripVisitId)
+                .orElseThrow(() -> new AssertionError("Visit should be created"));
+        assertEquals(time1, fetchedVisit1.getVisitTime(), "Visit time should match time1");
+        assertEquals(createdVisit.getTripId(), tripId);
+        assertEquals(createdVisit.getPlaceId(), placeId);
 
-        // Second call: should update
-        LocalDateTime time2 = LocalDateTime.of(2025, 6, 21, 10, 0);
-        tripService.createOrUpdateTripVisit(tripId, placeId, time2);
+        // Act 2: Update trip visit
+        LocalDateTime time2 = LocalDateTime.of(2025, 6, 21, 9, 0);
+        CreateUpdateTripVisitRequest visitRequest2 = new CreateUpdateTripVisitRequest(tripId, placeId, time2);
+        TripVisitDto updatedVisit = tripService.createOrUpdateTripVisit(visitRequest2);
 
-        TripVisit updatedVisit = tripVisitRepository.findById(id).orElseThrow();
-        assertEquals(time2, updatedVisit.getVisitTime());
+        // Assert update
+        TripVisit fetchedVisit2 = tripVisitRepository.findById(tripVisitId)
+                .orElseThrow(() -> new AssertionError("Visit should still exist after update"));
+        assertEquals(time2, fetchedVisit2.getVisitTime(), "Visit time should be updated to time2");
+        assertEquals(updatedVisit.getVisitTime(), time2);
     }
 
     @Test
@@ -215,7 +229,7 @@ public class TripServiceTest {
 
         LocalDateTime visitTime = LocalDateTime.of(2025, 6, 20, 14, 0);
 
-        tripService.createOrUpdateTripVisit(tripId, placeId, visitTime);
+        tripService.createOrUpdateTripVisit(new CreateUpdateTripVisitRequest(tripId, placeId, visitTime));
 
         tripService.deleteTripVisit(tripId, placeId);
 
@@ -251,8 +265,8 @@ public class TripServiceTest {
         LocalDateTime visitTime2 = LocalDateTime.of(2025, 6, 20, 3, 0, 0);
 
         // Step 3: add two TripVisit
-        tripService.createOrUpdateTripVisit(tripId, firstPlace.getPlaceId(), visitTime1);
-        tripService.createOrUpdateTripVisit(tripId, secondPlace.getPlaceId(), visitTime2);
+        tripService.createOrUpdateTripVisit(new CreateUpdateTripVisitRequest(tripId, firstPlace.getPlaceId(), visitTime1));
+        tripService.createOrUpdateTripVisit(new CreateUpdateTripVisitRequest(tripId, secondPlace.getPlaceId(), visitTime2));
 
         // Step 4: get and validate viewTrip
         Map<String, Object> tripDetail = tripService.viewTrip(tripId);
