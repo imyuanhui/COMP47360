@@ -1,12 +1,15 @@
 package com.group4.smarttrip.services;
 
 import com.group4.smarttrip.dtos.CreateTripRequest;
+import com.group4.smarttrip.dtos.CreateUpdateTripVisitRequest;
 import com.group4.smarttrip.dtos.TripDto;
+import com.group4.smarttrip.dtos.TripVisitDto;
 import com.group4.smarttrip.entities.Place;
 import com.group4.smarttrip.entities.Trip;
 import com.group4.smarttrip.entities.TripVisit;
 import com.group4.smarttrip.entities.TripVisitId;
 import com.group4.smarttrip.mappers.TripMapper;
+import com.group4.smarttrip.mappers.TripVisitMapper;
 import com.group4.smarttrip.repositories.PlaceRepository;
 import com.group4.smarttrip.repositories.TripRepository;
 import com.group4.smarttrip.repositories.TripVisitRepository;
@@ -27,6 +30,7 @@ public class TripService {
     private final TripMapper tripMapper;
     private final TripVisitRepository tripVisitRepository;
     private final PlaceRepository placeRepository;
+    private final TripVisitMapper tripVisitMapper;
 
 
     public TripDto createTrip(Trip trip, Long userId) {
@@ -72,7 +76,11 @@ public class TripService {
         return tripMapper.toDto(updatedTrip);
     }
 
-    public void createOrUpdateTripVisit(Long tripId, Long placeId, LocalDateTime time) {
+    public TripVisitDto createOrUpdateTripVisit(CreateUpdateTripVisitRequest request) {
+        Long tripId = request.getTripId();
+        Long placeId = request.getPlaceId();
+        LocalDateTime time = request.getVisitTime();
+
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new IllegalArgumentException("Trip not found"));
 
@@ -81,14 +89,18 @@ public class TripService {
 
         TripVisitId tripVisitId = new TripVisitId(tripId, placeId);
 
-        tripVisitRepository.findById(tripVisitId).ifPresentOrElse(existingVisit -> {
-            existingVisit.setVisitTime(time);
-            tripVisitRepository.save(existingVisit);
-        }, () -> {
-            TripVisit newVisit = new TripVisit(trip, place, time);
-            tripVisitRepository.save(newVisit);
-        });
+        return tripVisitRepository.findById(tripVisitId)
+                .map(existingVisit -> {
+                    existingVisit.setVisitTime(time);
+                    TripVisit tripVisit = tripVisitRepository.save(existingVisit);
+                    return tripVisitMapper.toDto(tripVisit);
+                })
+                .orElseGet(() -> {
+                    TripVisit newVisit = tripVisitRepository.save(new TripVisit(trip, place, time));
+                    return tripVisitMapper.toDto(newVisit);
+                });
     }
+
 
     public void deleteTripVisit(Long tripId, Long placeId) {
         TripVisitId tripVisitId = new TripVisitId(tripId, placeId);
