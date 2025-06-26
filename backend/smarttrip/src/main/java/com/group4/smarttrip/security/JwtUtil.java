@@ -21,18 +21,18 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public String generateToken(String email) {
+    public String generateToken(Long id) {
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(String.valueOf(id))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String generateRefreshToken(String email) {
+    public String generateRefreshToken(Long id) {
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(String.valueOf(id))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + REFRESH_EXPIRATION_TIME))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -41,15 +41,16 @@ public class JwtUtil {
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parser().setSigningKey(key).build().parseEncryptedClaims(token);
+            Jwts.parser().setSigningKey(key).build().parseClaimsJws(token);
             return true;
         } catch (JwtException e) {
             return false;
         }
     }
 
-    public String extractEmail(String token) {
-        return Jwts.parser().setSigningKey(key).build()
-                .parseClaimsJws(token).getBody().getSubject();
+    public Long extractUserId(String token) {
+        return Long.valueOf(Jwts.parser().setSigningKey(key).build()
+                .parseClaimsJws(token).getBody().getSubject());
     }
+
 }
