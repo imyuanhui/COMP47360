@@ -4,11 +4,12 @@ import pickle
 from linear import linear_predict
 from map_openweather_to_coco import map_openweather_to_coco
 from datetime import datetime
+from rf_predict import random_forest
 
 app = Flask(__name__)
 
-@app.route("/predict", methods=["POST"])
-def predict():
+@app.route("/predict/linear", methods=["POST"])
+def linear_predict():
     try:
         data = request.get_json()
 
@@ -38,6 +39,31 @@ def predict():
             flow_features=flow_features,
             coco_group=coco_group,
             is_weekend=is_weekend
+        )
+
+        return jsonify({"busyness_score": round(score, 2)})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route("/predict/randomforest", methods=["POST"])
+def rf_predict():
+
+    try:
+        # Organise parameters
+        data = request.get_json()
+
+        timestamp = data["timestamp"]
+        zone_id = data["zone_id"]
+
+        weather = data["weather"]
+        temp = weather.get("temp")
+        prcp = weather.get("prcp")
+
+        
+        # Call prediction function
+        score = random_forest(
+            timestamp, zone_id, temp, prcp, interest=0.72
         )
 
         return jsonify({"busyness_score": round(score, 2)})
