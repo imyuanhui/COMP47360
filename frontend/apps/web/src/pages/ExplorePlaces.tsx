@@ -1,4 +1,3 @@
-// src/pages/ExplorePlaces.tsx
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import SearchBar from '../components/SearchBar';
@@ -17,11 +16,27 @@ export default function ExplorePlaces() {
     let canceled = false;
     setLoading(true);
     fetchPlaces(query, filters)
-      .then(data => { if (!canceled) setPlaces(data); })
-      .catch(console.error)
-      .finally(() => { if (!canceled) setLoading(false); });
+      .then(data => {
+        if (!canceled && Array.isArray(data)) {
+          setPlaces(data);
+        } else if (!canceled) {
+          setPlaces([]);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        if (!canceled) setPlaces([]);
+      })
+      .finally(() => {
+        if (!canceled) setLoading(false);
+      });
+
     return () => { canceled = true; };
   }, [query, filters]);
+
+  const displayList = loading
+    ? Array.from({ length: 4 })
+    : (Array.isArray(places) && places.length ? places.slice(0, 4) : Array(4).fill(null));
 
   const left = (
     <>
@@ -30,15 +45,7 @@ export default function ExplorePlaces() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
-        {(loading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-48 bg-gray-200 animate-pulse rounded-lg"
-              />
-            ))
-          : (places.length ? places.slice(0, 4) : Array(4).fill(null))
-        ).map((p, idx) =>
+        {displayList.map((p, idx) =>
           p ? (
             <div
               key={p.id}
@@ -64,7 +71,6 @@ export default function ExplorePlaces() {
                 </div>
               </div>
 
-              {/* floating button bottom-right */}
               <button
                 onClick={() => {/* TODO: add to itinerary */}}
                 className="
@@ -90,12 +96,7 @@ export default function ExplorePlaces() {
               `}
             >
               <p className="text-gray-400">No place defined</p>
-              <button
-                className="
-                  mt-2 text-xs text-[#03253D]
-                  hover:underline
-                "
-              >
+              <button className="mt-2 text-xs text-[#03253D] hover:underline">
                 + Add to my itinerary
               </button>
             </div>
