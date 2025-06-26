@@ -1,22 +1,25 @@
-import React, { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import AOS from "aos";
-import "aos/dist/aos.css";
-
-import Dashboard from "./pages/Dashboard";
-import Landingpage from "./pages/Landingpage";
+// src/App.tsx
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import LandingPage   from './pages/Landingpage';
+import Dashboard     from './pages/Dashboard';
+import ExplorePlaces from './pages/ExplorePlaces';
+import MyItinerary   from './pages/MyItinerary';   // fixed import
+import SavedPlaces   from './pages/SavedPlaces';
+import Preferences   from './pages/Preferences';
 
 export default function App() {
-  useEffect(() => {
-    AOS.init({ duration: 800, once: true });
-  }, []);
-
   return (
-    <Router>
+    <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Landingpage />} />
+        <Route path="/"          element={<LandingPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/explore"   element={<ExplorePlaces />} />  {/* use /explore */}
+        <Route path="/itinerary" element={<MyItinerary />} />
+        <Route path="/saved"     element={<SavedPlaces />} />
+        <Route path="/preferences" element={<Preferences />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }

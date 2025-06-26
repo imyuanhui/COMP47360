@@ -1,20 +1,20 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: "/api",        // adjust if your backend lives elsewhere
   headers: { "Content-Type": "application/json" },
-  withCredentials: true, // if you use cookies
+  withCredentials: true,  // if you use cookies
 });
 
 // Auth
 export async function signup(username, email, password) {
   const resp = await api.post("/signup", { username, email, password });
-  return resp.data; // { message, userId }
+  return resp.data;  // { message, userId }
 }
 
 export async function login(identifier, password) {
   const resp = await api.post("/login", { identifier, password });
-  return resp.data; // { accessToken, refreshToken, user }
+  return resp.data;  // { accessToken, refreshToken, user }
 }
 
 export async function logout() {
@@ -30,26 +30,26 @@ export async function refreshToken(refreshToken) {
 // Trips
 export async function fetchTrendingTrips() {
   const resp = await api.get("/trips/trending");
-  return resp.data; // [ { id, title, image, ... } ]
+  return resp.data;  // [ { id, title, image, ... } ]
 }
 
 export async function fetchMyTrips() {
   const resp = await api.get("/trips/mine");
-  return resp.data; // [ { id, title, date, places, ... } ]
+  return resp.data;  // [ { id, title, date, places, ... } ]
 }
 
 export async function planTrip(dateRange, categories = []) {
   const resp = await api.post("/trips/plan", { dateRange, categories });
-  return resp.data; // { tripId, itineraryUrl }
+  return resp.data;  // { tripId, itineraryUrl }
 }
 
 // Profile
 export async function fetchProfile() {
-  const resp = await api.get("/profile");
+  const resp = await api.get("/users/me");
   return resp.data;
 }
 export async function updateProfile(updates) {
-  const resp = await api.put("/profile", updates);
+  const resp = await api.put("/users/me", updates);
   return resp.data;
 }
 
