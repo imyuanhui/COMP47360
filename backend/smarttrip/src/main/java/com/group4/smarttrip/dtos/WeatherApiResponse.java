@@ -1,6 +1,7 @@
 package com.group4.smarttrip.dtos;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
@@ -18,6 +19,7 @@ public class WeatherApiResponse {
         private double temp;
         private double humidity;
         private double wind_speed;
+        private Rain rain;
         private List<Weather> weather;
     }
 
@@ -28,6 +30,7 @@ public class WeatherApiResponse {
         private double temp;
         private double humidity;
         private double wind_speed;
+        private Rain rain;
         private List<Weather> weather;
     }
 
@@ -38,4 +41,10 @@ public class WeatherApiResponse {
         private String main;
     }
 
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Rain {
+        @JsonProperty("1h")
+        private Double oneHour;
+    }
 }
