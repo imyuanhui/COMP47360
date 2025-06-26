@@ -13,5 +13,6 @@ public class WeatherDto {
     private double windSpeed;
     private int weatherId;
     private String condition;
+    private double precipitation;
     private LocalDateTime time;
 }

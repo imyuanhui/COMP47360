@@ -43,12 +43,15 @@ public class WeatherService {
             WeatherApiResponse.Current current = response.getCurrent();
             WeatherApiResponse.Weather weather = current.getWeather().get(0);
 
+            Double precipitation = current.getRain() != null ? current.getRain().getOneHour() : 0.0;
+
             return new WeatherDto(
                     current.getTemp(),
                     current.getHumidity(),
                     current.getWind_speed(),
                     weather.getId(),
                     weather.getMain(),
+                    precipitation,
                     LocalDateTime.now()
             );
         } catch (RuntimeException e) {
@@ -71,6 +74,8 @@ public class WeatherService {
             WeatherApiResponse.DataPoint forecast = response.getData().get(0);
             WeatherApiResponse.Weather weather = forecast.getWeather().get(0);
 
+            Double precipitation = forecast.getRain() != null ? forecast.getRain().getOneHour() : 0.0;
+
             LocalDateTime localDateTime = new Timestamp(forecast.getDt() * 1000).toLocalDateTime();
 
             return new WeatherDto(
@@ -79,6 +84,7 @@ public class WeatherService {
                     forecast.getWind_speed(),
                     weather.getId(),
                     weather.getMain(),
+                    precipitation,
                     localDateTime
             );
         } catch (RuntimeException e) {
