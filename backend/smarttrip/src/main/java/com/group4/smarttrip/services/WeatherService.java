@@ -1,24 +1,18 @@
 package com.group4.smarttrip.services;
 
-import com.group4.smarttrip.dtos.LocationKey;
-import com.group4.smarttrip.dtos.Weather;
+import com.group4.smarttrip.dtos.WeatherApiResponse;
+import com.group4.smarttrip.dtos.WeatherDto;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.lang.reflect.Array;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 public class WeatherService {
-
-    private static final long FRESHNESS_MINUTES = 60;
-    private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${open-weather.api.key}")
     private String apiKey;
@@ -29,36 +23,72 @@ public class WeatherService {
     @Value("${open-weather.api.units}")
     private String units;
 
-    private Map<LocationKey, List<Weather>> cache = new ConcurrentHashMap<>();
+    private final RestTemplate restTemplate = new RestTemplate();
 
-    public Weather getCurrentWeather(double lat, double lon) {
-        LocationKey locationKey = new LocationKey(lat, lon);
+    private final double defaultLat = 40.776676;
+    private final double defaultLon = -73.971321;
 
-        List<Weather> bucket = cache.getOrDefault(locationKey, new CopyOnWriteArrayList<>());
+    @Cacheable(value = "weatherCache", key = "'manhattan'")
+    public  WeatherDto getCurrentWeather() {
+        return getCurrentWeather(defaultLat, defaultLon);
+    }
 
-        if (Array.getLength(bucket) > 0) {
-            for (Weather w : bucket) {
-                if (Duration.between(w.getLastUpdatedTime(), LocalDateTime.now()).toMinutes() < FRESHNESS_MINUTES) {
-                    return w;
-                }
-            }
+    @Cacheable(value = "weatherCache", key = "#lat + '_' + #lon")
+    public WeatherDto getCurrentWeather(double lat, double lon) {
+        String url = String.format("%s?lat=%.4f&lon=%.4f&appid=%s&exclude=minutely,hourly,daily,alerts&units=%s",
+                apiUrl, lat, lon, apiKey, units);
+
+        try {
+            WeatherApiResponse response = restTemplate.getForObject(url, WeatherApiResponse.class);
+            WeatherApiResponse.Current current = response.getCurrent();
+            WeatherApiResponse.Weather weather = current.getWeather().get(0);
+
+            Double precipitation = current.getRain() != null ? current.getRain().getOneHour() : 0.0;
+
+            return new WeatherDto(
+                    current.getTemp(),
+                    current.getHumidity(),
+                    current.getWind_speed(),
+                    weather.getId(),
+                    weather.getMain(),
+                    precipitation,
+                    LocalDateTime.now()
+            );
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Weather API return invalid response");
         }
+    }
 
-        String url = String.format("%s?lat=%.4f&lon=%.4f&appid=%s&units=%s", apiUrl, lat, lon, apiKey, units);
-        var response = restTemplate.getForObject(url, Object.class);
+    @Cacheable(value = "weatherCache", key = "'manhattan_' + #dt")
+    public WeatherDto getForecastWeather(Long dt) {
+        return getForecastWeather(defaultLat, defaultLon, dt);
+    }
 
-        Weather weather = new Weather(
-                response.getMain().getTemp(),
-                response.getMain().getHumidity(),
-                response.getMain().getWind().getSpeed(),
-                response.getWeather().getMain(),
-                LocalDateTime.now(),
-                locationKey
-        );
+    @Cacheable(value = "weatherCache", key = "#lat + '_' + #lon + '_' + #dt")
+    public WeatherDto getForecastWeather(double lat, double lon, Long dt) {
+        String url = String.format("%s/timemachine?lat=%.4f&lon=%.4f&dt=%s&appid=%s&units=%s",
+                apiUrl, lat, lon, dt, apiKey, units);
 
-        bucket.add(weather);
-        cache.putIfAbsent(locationKey, bucket);
+        try {
+            WeatherApiResponse response = restTemplate.getForObject(url, WeatherApiResponse.class);
+            WeatherApiResponse.DataPoint forecast = response.getData().get(0);
+            WeatherApiResponse.Weather weather = forecast.getWeather().get(0);
 
-        return weather;
+            Double precipitation = forecast.getRain() != null ? forecast.getRain().getOneHour() : 0.0;
+
+            LocalDateTime localDateTime = new Timestamp(forecast.getDt() * 1000).toLocalDateTime();
+
+            return new WeatherDto(
+                    forecast.getTemp(),
+                    forecast.getHumidity(),
+                    forecast.getWind_speed(),
+                    weather.getId(),
+                    weather.getMain(),
+                    precipitation,
+                    localDateTime
+            );
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Weather API return invalid response");
+        }
     }
 }
