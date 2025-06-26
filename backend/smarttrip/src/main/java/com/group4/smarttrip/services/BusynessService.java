@@ -63,32 +63,33 @@ public class BusynessService {
     }
 
     public double predictBusyness(Zone zone, WeatherDto weather, LocalDateTime time) {
-        Flow flow = flowService.getFlowByZoneAndTime(zone.getZoneId(), time);
-        double lat = zone.getCentralLat();
-        double lon = zone.getCentralLon();
+//        Flow flow = flowService.getFlowByZoneAndTime(zone.getZoneId(), time);
+//        double lat = zone.getCentralLat();
+//        double lon = zone.getCentralLon();
         String formattedTime = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         Map<String, Object> weatherMap = new HashMap<>();
         weatherMap.put("temp", weather.getTemperature());
-        weatherMap.put("prcp", 0); // Cannot get precipitation data from openWeatherApi
+        weatherMap.put("prcp", weather.getPrecipitation());
         weatherMap.put("weather_id", weather.getWeatherId());
 
-        Map<String, Object> flowFeaturesMap = new HashMap<>();
-        flowFeaturesMap.put("log_mta_flow", flow.getLogMtaFlow());
-        flowFeaturesMap.put("log_taxi_flow", flow.getLogTaxiFlow());
-        flowFeaturesMap.put("fare_amount", flow.getFareAmount());
-        flowFeaturesMap.put("has_congestion_surcharge", flow.getHasCongestionSurcharge().intValue());
-        flowFeaturesMap.put("zone_avg_flow", flow.getZoneAvgFlow());
+        // For linear regression only
+//        Map<String, Object> flowFeaturesMap = new HashMap<>();
+//        flowFeaturesMap.put("log_mta_flow", flow.getLogMtaFlow());
+//        flowFeaturesMap.put("log_taxi_flow", flow.getLogTaxiFlow());
+//        flowFeaturesMap.put("fare_amount", flow.getFareAmount());
+//        flowFeaturesMap.put("has_congestion_surcharge", flow.getHasCongestionSurcharge().intValue());
+//        flowFeaturesMap.put("zone_avg_flow", flow.getZoneAvgFlow());
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("timestamp", formattedTime);
         requestBody.put("zone_id", zone.getZoneId());
-        requestBody.put("lat", lat);
-        requestBody.put("lon", lon);
+//        requestBody.put("lat", lat);
+//        requestBody.put("lon", lon);
         requestBody.put("weather", weatherMap);
-        requestBody.put("flow_features", flowFeaturesMap);
+//        requestBody.put("flow_features", flowFeaturesMap);
 
-        String url = "http://127.0.0.1:5000/predict";
+        String url = "http://127.0.0.1:5000/predict/randomforest";
         Map<String, Object> responseBody = restTemplate.postForObject(url, requestBody, Map.class);
         return ((Number) responseBody.get("busyness_score")).doubleValue();
     }
