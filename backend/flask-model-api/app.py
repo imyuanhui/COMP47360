@@ -5,6 +5,7 @@ from linear import linear_predict
 from map_openweather_to_coco import map_openweather_to_coco
 from datetime import datetime
 from rf_predict import random_forest
+from fetch_interest import fetch_interest
 
 app = Flask(__name__)
 
@@ -47,28 +48,26 @@ def linear_predict():
         return jsonify({"error": str(e)}), 400
 
 @app.route("/predict/randomforest", methods=["POST"])
-def rf_predict():
-
+def predict_randomforest():
     try:
-        # Organise parameters
         data = request.get_json()
-
         timestamp = data["timestamp"]
         zone_id = data["zone_id"]
-
+        zone_name = data["zone_name"]
         weather = data["weather"]
+
         temp = weather.get("temp")
         prcp = weather.get("prcp")
 
-        
-        # Call prediction function
-        score = random_forest(
-            timestamp, zone_id, temp, prcp, interest=0.72
-        )
+        print(f"[INFO] Received prediction request for zone_id={zone_id}, zone_name='{zone_name}'")
+
+        interest = fetch_interest(zone_name)
+        score = random_forest(timestamp, zone_id, temp, prcp, interest)
 
         return jsonify({"busyness_score": round(score, 2)})
 
     except Exception as e:
+        print(f"[ERROR] Prediction failed: {e}")
         return jsonify({"error": str(e)}), 400
 
 if __name__ == "__main__":
