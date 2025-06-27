@@ -84,6 +84,7 @@ public class BusynessService {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("timestamp", formattedTime);
         requestBody.put("zone_id", zone.getZoneId());
+        requestBody.put("zone_name", zone.getZoneName());
 //        requestBody.put("lat", lat);
 //        requestBody.put("lon", lon);
         requestBody.put("weather", weatherMap);
