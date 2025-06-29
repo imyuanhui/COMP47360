@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import PlaceList from '../components/PlaceList';
 import MapPane from '../components/MapPane';
-import { fetchSaved } from '../services/api';
+import { fetchSavedPlaces } from '../services/api';
 import type { Place } from '../types';
 
 export default function SavedPlaces() {
