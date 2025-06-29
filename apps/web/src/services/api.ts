@@ -11,9 +11,15 @@ const api = axios.create({
 });
 
 // === Token Management ===
-export function setAuthToken(token: string) {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+export function setAuthToken(token: string | null) {
+  if (token) {
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  } else {
+    delete axios.defaults.headers.common["Authorization"];
+  }
 }
+
+
 
 export function clearAuthToken() {
   delete api.defaults.headers.common["Authorization"];
@@ -42,8 +48,15 @@ export function login(identifier: string, password: string): Promise<LoginRespon
   return api.post("/login", { identifier, password }).then(r => r.data);
 }
 
-export function logout(): Promise<{ message: string }> {
-  return api.post("/logout").then(r => r.data);
+export async function logout(): Promise<{ message: string }> {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Token not found");
+
+  // Ensure token is set for API instance
+  setAuthToken(token);
+
+  const response = await api.post("/logout");
+  return response.data;
 }
 
 export function refreshToken(refreshToken: string): Promise<{ accessToken: string }> {
@@ -141,9 +154,14 @@ export function updateTrip(
   return api.put(`/trips/${tripId}`, updates).then(r => r.data);
 }
 
-export function deleteTrip(tripId: number): Promise<void> {
-  return api.delete(`/trips/${tripId}`).then(() => {});
-}
+export const deleteTrip = async (tripId: string) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Not authenticated");
+  const res = await api.delete(`/trips/${tripId}`);
+
+  return res.data;
+};
+
 
 export function addOrUpdateVisit(
   tripId: number,
