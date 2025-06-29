@@ -1,0 +1,39 @@
+{
+  "name": "smarttour-web",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@react-google-maps/api": "^2.20.7",
+    "aos": "^2.3.4",
+    "axios": "^1.10.0",
+    "datepicker": "^0.0.0",
+    "dayjs": "^1.11.13",
+    "leaflet": "^1.9.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.5.2",
+    "react-leaflet": "^4.2.1",
+    "react-router-dom": "^7.6.2",
+    "react-tailwindcss-datepicker": "^1.7.3",
+    "socket.io-client": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/aos": "^3.0.7",
+    "@types/leaflet": "^1.9.18",
+    "@types/node": "latest",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.2.0",
+    "@types/react-router-dom": "^5.3.3",
+    "@types/socket.io-client": "latest",
+    "@vitejs/plugin-react": "^4.6.0",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.21",
+    "tailwindcss": "^3.3.2",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.0"
+  }
+}
