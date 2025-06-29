@@ -1,12 +1,16 @@
-// src/services/api.ts
 import axios from "axios";
+import type { Place, ItineraryItem, Preferences } from "../types";
 
+// === Axios Configuration ===
 const api = axios.create({
-  baseURL: "/api",
-  headers: { "Content-Type": "application/json" },
+  baseURL: "https://localhost:8080/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
   withCredentials: true,
 });
 
+// === Token Management ===
 export function setAuthToken(token: string) {
   api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 }
@@ -15,8 +19,7 @@ export function clearAuthToken() {
   delete api.defaults.headers.common["Authorization"];
 }
 
-// ─── AUTH ─────────────────────────────────────────────────────────────────────
-
+// === Auth Interfaces ===
 export interface UserPayload {
   id: string;
   username?: string;
@@ -30,152 +33,148 @@ export interface LoginResponse {
   user: UserPayload;
 }
 
-export function signup(
-  email: string,
-  username: string,
-  password: string
-): Promise<{ message: string; userId: string }> {
+// === Auth Endpoints ===
+export function signup(email: string, username: string, password: string) {
   return api.post("/signup", { email, username, password }).then(r => r.data);
 }
 
-export function login(
-  identifier: string,
-  password: string
-): Promise<LoginResponse> {
+export function login(identifier: string, password: string): Promise<LoginResponse> {
   return api.post("/login", { identifier, password }).then(r => r.data);
-}
-
-export function oauthGoogle(
-  accessToken: string
-): Promise<LoginResponse> {
-  return api.post("/oauth/google", { accessToken }).then(r => r.data);
-}
-
-export function oauthFacebook(
-  accessToken: string
-): Promise<LoginResponse> {
-  return api.post("/oauth/facebook", { accessToken }).then(r => r.data);
-}
-
-export function refreshToken(
-  refreshToken: string
-): Promise<{ accessToken: string }> {
-  return api.post("/token/refresh", { refreshToken }).then(r => r.data);
 }
 
 export function logout(): Promise<{ message: string }> {
   return api.post("/logout").then(r => r.data);
 }
 
+export function refreshToken(refreshToken: string): Promise<{ accessToken: string }> {
+  return api.post("/token/refresh", { refreshToken }).then(r => r.data);
+}
+
+export function oauthLogin(provider: "google" | "facebook", accessToken: string): Promise<LoginResponse> {
+  return api.post(`/oauth/${provider}`, { accessToken }).then(r => r.data);
+}
+
 export function forgotPassword(email: string): Promise<{ message: string }> {
   return api.post("/forgot-password", { email }).then(r => r.data);
 }
 
-export function resetPassword(
-  token: string,
-  newPassword: string
-): Promise<{ message: string }> {
+export function resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
   return api.post("/reset-password", { token, newPassword }).then(r => r.data);
 }
 
-// ─── USERS & PROFILE ────────────────────────────────────────────────────────────
-
+// === User Profile Endpoints ===
 export interface Profile {
   id: string;
   username: string;
   email: string;
   phone?: string;
   location?: string;
-  subscriptionStatus: string;
 }
 
 export function fetchProfile(): Promise<Profile> {
-  return api.get("/users/me").then(r => r.data);
+  return api.get("/profile").then(r => r.data);
 }
 
-export function updateProfile(
-  updates: Partial<Pick<Profile, "username" | "phone" | "location">>
-): Promise<Profile> {
-  return api.put("/users/me", updates).then(r => r.data);
+export function updateProfile(profileUpdates: Partial<Profile>): Promise<Profile> {
+  return api.patch("/profile", profileUpdates).then(r => r.data);
 }
 
-export function manageSubscription(
-  action: "upgrade" | "downgrade" | "cancel",
-  payload?: any
-): Promise<{ subscriptionStatus: string }> {
-  return api.post(`/users/subscription/${action}`, payload).then(r => r.data);
+export function deleteProfile(): Promise<void> {
+  return api.delete("/profile").then(() => {});
 }
 
-// ─── TRIPS ─────────────────────────────────────────────────────────────────────
+export function changePassword(oldPassword: string, newPassword: string): Promise<{ message: string }> {
+  return api.put("/profile/change-password", {
+    oldPassword,
+    newPassword,
+  }).then(r => r.data);
+}
 
+// === Trips ===
 export interface Trip {
-  id: string;
-  title: string;
-  image: string;
-  rating?: number;
-  date?: string;
-  places?: number;
+  tripId: number;
+  tripName: string;
+  startDateTime: string;
+  endDateTime: string;
+  numTravellers: number;
+  thumbnailUrl?: string;
 }
 
-export function fetchTrendingTrips(): Promise<Trip[]> {
-  return api.get("/trips/trending").then(r => r.data);
+export interface Visit {
+  placeId: number;
+  visitTime: string;
 }
 
-export function fetchMyTrips(): Promise<Trip[]> {
-  return api.get("/trips/mine").then(r => r.data);
+export interface TripDetails {
+  basicInfo: Trip;
+  visits: { visitTime: string; place: { placeId: number; placeName: string } }[];
 }
 
-export interface PlanTripArgs {
-  dateRange: { startDate: string; endDate: string };
-  categories: string[];
+export function fetchMyTrips(params = { page: 1 }): Promise<{ Trips: Trip[] }> {
+  return api.get("/trips", { params }).then(r => r.data);
 }
 
-export function planTrip(
-  args: PlanTripArgs
-): Promise<{ tripId: string; itineraryUrl?: string }> {
-  return api.post("/trips/plan", args).then(r => r.data);
+export function createTrip(tripData: {
+  tripName?: string;
+  startDateTime: string;
+  endDateTime: string;
+  numTravellers: number;
+  thumbnailUrl?: string;
+}): Promise<Trip> {
+  return api.post("/trips", tripData).then(r => r.data);
 }
 
-// ─── PLACES & ITINERARY ────────────────────────────────────────────────────────
-
-import type { Place, ItineraryItem, Preferences } from "../types";
-
-export function fetchPlaces(
-  query: string,
-  filters: string[]
-): Promise<Place[]> {
-  return api
-    .get("/places", { params: { q: query, filters: filters.join(",") } })
-    .then(r => r.data);
+export function fetchTripDetails(tripId: number): Promise<TripDetails> {
+  return api.get(`/trips/${tripId}`).then(r => r.data);
 }
 
-export function fetchItinerary(): Promise<ItineraryItem[]> {
-  return api.get("/itinerary").then(r => r.data);
+export function updateTrip(
+  tripId: number,
+  updates: {
+    tripName?: string;
+    startDateTime?: string;
+    endDateTime?: string;
+    numTravellers?: number;
+    thumbnailUrl?: string;
+  }
+): Promise<Trip> {
+  return api.put(`/trips/${tripId}`, updates).then(r => r.data);
 }
 
-export function addItinerary(
-  placeId: string,
-  timeSlot: string
+export function deleteTrip(tripId: number): Promise<void> {
+  return api.delete(`/trips/${tripId}`).then(() => {});
+}
+
+export function addOrUpdateVisit(
+  tripId: number,
+  visit: Visit
+): Promise<any> {
+  return api.post(`/trips/${tripId}/visits`, visit).then(r => r.data);
+}
+
+export function updateVisit(
+  tripId: number,
+  visit: Visit
+): Promise<any> {
+  return api.put(`/trips/${tripId}/visits`, visit).then(r => r.data);
+}
+
+export function deleteVisit(
+  tripId: number,
+  placeId: number
 ): Promise<void> {
-  return api.post("/itinerary/add", { placeId, time: timeSlot }).then(r => r.data);
+  return api.request({
+    method: "DELETE",
+    url: `/trips/${tripId}/visits`,
+    data: { tripId, placeId },
+  }).then(() => {});
 }
 
-export function removeItinerary(id: string): Promise<void> {
-  return api.delete(`/itinerary/${id}`).then(r => r.data);
-}
-
-export function fetchSavedPlaces(): Promise<Place[]> {
-  return api.get("/places/saved").then(r => r.data);
-}
-
-// ─── PREFERENCES ───────────────────────────────────────────────────────────────
-
+// === Preferences  ===
 export function fetchPreferences(): Promise<Preferences> {
   return api.get("/preferences").then(r => r.data);
 }
 
-export function updatePreferences(
-  prefs: Preferences
-): Promise<Preferences> {
+export function updatePreferences(prefs: Preferences): Promise<Preferences> {
   return api.post("/preferences", prefs).then(r => r.data);
 }
