@@ -1,15 +1,25 @@
 // src/types.ts
 
+export interface TravelTimes {
+  walk: number;
+  drive: number;
+  transit: number;
+}
+
 export interface Place {
   id: string;
   name: string;
-  address: string;
   lat: number;
   lng: number;
-  crowdTime: string;
-  visitTime: string;
-  rating: number;
-  imageUrl: string;
+  address: string;
+
+  /* mark the rest optional */
+  crowdTime?: string;
+  visitTime?: string;
+  rating?: number;
+  imageUrl?: string;
+  travel: TravelTimes
+  /* add other fields here … */
 }
 
 export interface ItineraryItem {
@@ -21,24 +31,4 @@ export interface ItineraryItem {
 export interface Preferences {
   categories: string[];
 }
-export interface Place {
-  id: string;
-  name: string;
-  address: string;
-  imageUrl: string;
-  crowdTime: string;
-  rating: number;
-  lat: number;
-  lng: number;
-  place: string;
-  distance: number;
-  openNow: string;
-  startDate: number;
-  endDate: number;
-  // ADD THIS:
-  travel: {
-    walk: number;    // minutes walking
-    drive: number;   // minutes driving
-    transit: number; // minutes public transit
-  };
-}
+
