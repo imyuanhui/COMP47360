@@ -1,10 +1,10 @@
 // src/pages/MyItinerary.tsx
-import React, { useState, useEffect } from 'react';
-import Layout from '../components/Layout';
-import ItineraryList from '../components/ItineraryList';
-import MapPane from '../components/MapPane';
-import { fetchItinerary, removeItinerary } from '../services/api';
-import type { ItineraryItem } from '../types';
+import React, { useState, useEffect } from "react";
+import Layout from "../components/Layout";
+import ItineraryList from "../components/ItineraryList";
+import MapPane from "../components/MapPane";
+import { fetchItinerary, removeItinerary } from "../services/api";
+import type { ItineraryItem } from "../types";
 
 export default function MyItinerary() {
   const [items, setItems] = useState<ItineraryItem[]>([]);
@@ -25,13 +25,13 @@ export default function MyItinerary() {
   // LEFT pane: scrollable list of stops
   const left = (
     <div className="space-y-4">
-      {items.map(item => (
+      {items.map((item) => (
         <div
           key={item.id}
           className={`
             relative flex items-center bg-white rounded-lg shadow p-4
             transition-transform transform hover:-translate-y-1 hover:shadow-lg
-            ${highlightId === item.id ? 'ring-2 ring-blue-500' : ''}
+            ${highlightId === item.id ? "ring-2 ring-blue-500" : ""}
           `}
         >
           {/* Thumbnail */}
@@ -63,17 +63,15 @@ export default function MyItinerary() {
 
   // RIGHT pane: map with all itinerary markers
   const right = (
+    // <MapPane
+    //   places={items.map(i => i.place)}
+    //   onMarkerClick={setHighlightId}
+    // />
     <MapPane
-      places={items.map(i => i.place)}
-      onMarkerClick={setHighlightId}
+      places={items.map((i) => i.place)}
+      onMarkerClick={(place) => setHighlightId(place.id)} 
     />
   );
 
-  return (
-    <Layout
-      activeTab="My Itinerary"
-      left={left}
-      right={right}
-    />
-  );
+  return <Layout activeTab="My Itinerary" left={left} right={right} />;
 }
