@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import ItineraryList from '../components/ItineraryList';
 import MapPane from '../components/MapPane';
-import { fetchItinerary, removeItinerary } from '../services/api';
+// import { fetchItinerary, removeItinerary } from '../services/api';
 import type { ItineraryItem } from '../types';
 
 export default function MyItinerary() {
