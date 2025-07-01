@@ -39,7 +39,10 @@ public class Trip {
 
     private LocalDateTime updatedAt;
 
+//    @OneToMany(mappedBy = "trip", cascade = CascadeType.REMOVE, orphanRemoval = true)
+//    private List<TripVisit> tripVisits;
+
     @OneToMany(mappedBy = "trip", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    private List<TripVisit> tripVisits;
+    private List<Destination> destinations;
 
 }
