@@ -24,29 +24,55 @@ export default function LandingPage() {
     AOS.init({ duration: 800, once: true });
   }, []);
 
-  const handleLogin = async () => {
-    try {
-      const { accessToken } = await apiLogin(loginIdentifier, loginPassword);
-      localStorage.setItem("token", accessToken); //local storage
-      setAuthToken(accessToken);
-      toast.success("Logged in!");
-      setShowLogin(false);
-      navigate("/dashboard");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Login failed");
-    }
-  };
+ const handleLogin = async () => {
+  try {
+    const { accessToken } = await apiLogin(loginIdentifier, loginPassword);
+    localStorage.setItem("token", accessToken);
+    setAuthToken(accessToken);
+    toast.success("Logged in!");
+    setShowLogin(false);
+    navigate("/dashboard");
+  } catch (err: any) {
+    const error = err.response?.data?.error?.toLowerCase() || "";
 
-  const handleSignup = async () => {
-    try {
-      await apiSignup(signupUsername, signupEmail, signupPassword);
-      toast.success("Account created! Please log in.");
-      setShowSignup(false);
-      setShowLogin(true);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Signup failed");
+    if (error.includes("not found")) {
+      toast.error("No account found. Try signing up.");
+    } else if (error.includes("wrong password")) {
+      toast.error("Incorrect password. Please try again.");
+    } else if (error.includes("invalid credentials")) {
+      toast.error("Invalid email or password.");
+    } else {
+      toast.error("Login failed");
     }
-  };
+
+    console.error("Login error:", error);
+  }
+};
+
+
+ const handleSignup = async () => {
+  try {
+    await apiSignup(signupUsername, signupEmail, signupPassword);
+    toast.success("Account created! Please log in.");
+    setShowSignup(false);
+    setShowLogin(true);
+  } catch (err: any) {
+    const msg = err.response?.data?.error || "Signup failed"; // ✅ fixed here
+    console.error("Signup error:", msg);
+
+    if (msg.toLowerCase().includes("email")) {
+      toast.error("Email already in use. Try logging in instead.");
+    } else if (msg.toLowerCase().includes("username")) {
+      toast.error("Username already taken. Try a different one.");
+    } else {
+      toast.error(msg);
+    }
+  }
+};
+
+
+
+
 
   const isModalOpen = showLogin || showSignup;
 
