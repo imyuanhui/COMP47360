@@ -3,7 +3,7 @@ import type { Place, ItineraryItem, Preferences } from "../types";
 
 // === Axios Configuration ===
 const api = axios.create({
-  baseURL: "http://localhost:8080/api", //http instead of https
+  baseURL: "http://localhost:8081/api", //http instead of https
   headers: {
     "Content-Type": "application/json",
   },
@@ -46,17 +46,25 @@ export function login(
   identifier: string,
   password: string
 ): Promise<LoginResponse> {
-  return api.post("/login", { identifier, password }).then((r) => r.data);
+  return api.post("/login", { identifier, password }).then((r) => {
+    localStorage.setItem("token", r.data.accessToken);
+    localStorage.setItem("refreshToken", r.data.refreshToken);
+    setAuthToken(r.data.accessToken);
+    return r.data;
+  });
 }
 
 export async function logout(): Promise<{ message: string }> {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Token not found");
 
-  // Ensure token is set for API instance
   setAuthToken(token);
-
   const response = await api.post("/logout");
+
+  localStorage.removeItem("token");
+  localStorage.removeItem("refreshToken");
+  clearAuthToken();
+
   return response.data;
 }
 
@@ -148,7 +156,6 @@ export function fetchMyTrips(params = { page: 1 }): Promise<{ Trips: Trip[] }> {
   return api.get("/trips", { params }).then((r) => r.data);
 }
 
-// Define fetchItinerary function which returns a Promise resolving to an array of ItineraryItem
 export function fetchItinerary(): Promise<ItineraryItem[]> {
   return fetchMyTrips({ page: 1 }).then((r) => {
     return r.Trips.map((trip) => ({
@@ -232,3 +239,43 @@ export function fetchPreferences(): Promise<Preferences> {
 export function updatePreferences(prefs: Preferences): Promise<Preferences> {
   return api.post("/preferences", prefs).then((r) => r.data);
 }
+
+// === Auto Refresh Token on JWT Expiry ===
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    const isJwtExpired =
+      error.response?.status === 500 &&
+      error.response?.data?.message?.includes("JWT expired");
+
+    if (isJwtExpired && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const storedRefreshToken = localStorage.getItem("refreshToken");
+        if (!storedRefreshToken) throw new Error("No refresh token found");
+
+        const res = await api.post("/token/refresh", {
+          refreshToken: storedRefreshToken,
+        });
+
+        const newAccessToken = res.data.accessToken;
+        localStorage.setItem("token", newAccessToken);
+        setAuthToken(newAccessToken);
+
+        originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (err) {
+        console.error("Auto refresh failed:", err);
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/login";
+        return Promise.reject(err);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
