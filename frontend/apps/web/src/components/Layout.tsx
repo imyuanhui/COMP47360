@@ -107,7 +107,18 @@ export default function Layout({ activeTab, left, right }: Props) {
         </nav>
 
         {/* 4️⃣  Scrollable main content (search, list, etc.) */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div
+          className="flex-1 overflow-y-auto px-6 py-4"
+          style={{
+            scrollbarWidth: 'none',          // Firefox
+            msOverflowStyle: 'none',         // IE/Edge
+          }}
+        >
+          <style>{`
+            div::-webkit-scrollbar {
+              display: none;                 // Chrome, Safari
+            }
+          `}</style>
           {left}
         </div>
 
