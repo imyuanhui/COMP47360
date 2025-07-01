@@ -1,64 +1,85 @@
-// src/pages/SavedPlaces.tsx
-import React, { useState, useEffect } from 'react';
-import Layout from '../components/Layout';
-import PlaceList from '../components/PlaceList';
-import MapPane from '../components/MapPane';
-import { fetchSavedPlaces } from '../services/api';
+/***********************************************************************
+ * SavedPlaces.tsx
+ * ---------------------------------------------------------------------
+ * Page that lists the user’s saved attractions and shows them on a map.
+ ***********************************************************************/
+
+import React, { useState } from 'react';
+import Layout    from '../components/Layout';
+import PlaceCard from '../components/PlaceCard';
+import MapPane   from '../components/MapPane';
+import { useSavedPlaces } from '../services/useSavedPlaces';
 import type { Place } from '../types';
 
+/* default map centre: Manhattan */
+const DEFAULT_CENTRE: google.maps.LatLngLiteral = { lat: 40.7831, lng: -73.9712 };
+
 export default function SavedPlaces() {
-  const [places, setPlaces] = useState<Place[]>([]);
-  const [highlightId, setHighlightId] = useState<string | null>(null);
+  /* saved-places context hook */
+  const { saved, removePlace } = useSavedPlaces();
 
-  // Load saved places on mount
-  useEffect(() => {
-    fetchSaved().then(setPlaces);
-  }, []);
+  /* map + highlight state (mirrors ExplorePlaces) */
+  const [focusCoord, setFocusCoord] = useState<google.maps.LatLngLiteral | null>(null);
+  const [mapZoom,    setMapZoom]    = useState(13);
+  const [highlightId,setHighlight]  = useState<string | null>(null);
+  const [infoPlace,  setInfoPlace]  = useState<Place | null>(null);
 
-  // LEFT pane: list of saved places
+  /* ---------------- LEFT: list of saved cards ---------------- */
   const left = (
-    <div className="space-y-4">
-      {places.map((place) => (
-        <div
-          key={place.id}
-          className={`
-            relative flex items-center bg-white rounded-lg shadow p-4
-            transition-transform transform hover:-translate-y-1 hover:shadow-lg
-            ${highlightId === place.id ? 'ring-2 ring-blue-500' : ''}
-          `}
-        >
-          {/* Thumbnail placeholder */}
-          <div className="w-24 h-24 bg-gray-200 rounded mr-4 flex-shrink-0" />
+    <div className="space-y-4 pr-1">
+      {saved.length === 0 ? (
+        <p className="mt-6 text-center text-gray-500">No places saved yet.</p>
+      ) : (
+        saved.map(p => (
+          <div
+            key={p.id}
+            onMouseEnter={() => setHighlight(p.id)}
+            onMouseLeave={() => setHighlight(null)}
+            onClick={() => {
+              setHighlight(p.id);
+              setFocusCoord({ lat: p.lat, lng: p.lng });
+              setMapZoom(15);
+              setInfoPlace(p);
+            }}
+          >
+            <PlaceCard
+              place={p}
+              saved={true}
+              onAdd={() => {}}
+              /* ‘Remove’ link shown via card title click */
+              highlighted={highlightId === p.id}
+            />
 
-          {/* Details */}
-          <div className="flex-1">
-            <h3 className="font-semibold text-lg">{place.name}</h3>
-            <p className="text-sm text-gray-600">{place.address}</p>
+            {/* tiny remove link */}
+            <button
+              onClick={() => removePlace(p.id)}
+              className="ml-2 text-xs text-red-600 hover:underline"
+            >
+              remove
+            </button>
           </div>
-        </div>
-      ))}
-
-      {places.length === 0 && (
-        <p className="text-center text-gray-500 mt-8">
-          You haven't saved any places yet.
-        </p>
+        ))
       )}
     </div>
   );
 
-  // RIGHT pane: map with saved markers
+  /* ---------------- RIGHT: map ---------------- */
   const right = (
     <MapPane
-      places={places}
-      onMarkerClick={setHighlightId}
+      places={saved}
+      focusCoord={focusCoord ?? DEFAULT_CENTRE}
+      zoom={mapZoom}
+      infoPlace={infoPlace}
+      onInfoClose={() => setInfoPlace(null)}
+      onMarkerClick={p => {
+        setHighlight(p.id);
+        setFocusCoord({ lat: p.lat, lng: p.lng });
+        setMapZoom(15);
+        setInfoPlace(p);
+      }}
     />
   );
 
-  return (
-    <Layout
-      activeTab="Saved Places"
-      left={left}
-      right={right}
-    />
-  );
+  /* ---------------- render ---------------- */
+  return <Layout activeTab="Saved Places" left={left} right={right} />;
 }
