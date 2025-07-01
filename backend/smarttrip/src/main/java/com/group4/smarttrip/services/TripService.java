@@ -1,18 +1,11 @@
 package com.group4.smarttrip.services;
 
 import com.group4.smarttrip.dtos.CreateTripRequest;
-import com.group4.smarttrip.dtos.CreateUpdateTripVisitRequest;
+import com.group4.smarttrip.dtos.DestinationDto;
 import com.group4.smarttrip.dtos.TripDto;
-import com.group4.smarttrip.dtos.TripVisitDto;
-import com.group4.smarttrip.entities.Place;
 import com.group4.smarttrip.entities.Trip;
-import com.group4.smarttrip.entities.TripVisit;
-import com.group4.smarttrip.entities.TripVisitId;
 import com.group4.smarttrip.mappers.TripMapper;
-import com.group4.smarttrip.mappers.TripVisitMapper;
-import com.group4.smarttrip.repositories.PlaceRepository;
 import com.group4.smarttrip.repositories.TripRepository;
-import com.group4.smarttrip.repositories.TripVisitRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -28,9 +21,10 @@ import java.util.stream.Collectors;
 public class TripService {
     private final TripRepository tripRepository;
     private final TripMapper tripMapper;
-    private final TripVisitRepository tripVisitRepository;
-    private final PlaceRepository placeRepository;
-    private final TripVisitMapper tripVisitMapper;
+//    private final TripVisitRepository tripVisitRepository;
+//    private final PlaceRepository placeRepository;
+//    private final TripVisitMapper tripVisitMapper;
+    private final DestinationService destinationService;
 
 
     public TripDto createTrip(Trip trip, Long userId) {
@@ -76,56 +70,63 @@ public class TripService {
         return tripMapper.toDto(updatedTrip);
     }
 
-    public TripVisitDto createOrUpdateTripVisit(CreateUpdateTripVisitRequest request) {
-        Long tripId = request.getTripId();
-        Long placeId = request.getPlaceId();
-        LocalDateTime time = request.getVisitTime();
+//    public TripVisitDto createOrUpdateTripVisit(CreateUpdateTripVisitRequest request) {
+//        Long tripId = request.getTripId();
+//        Long placeId = request.getPlaceId();
+//        LocalDateTime time = request.getVisitTime();
+//
+//        Trip trip = tripRepository.findById(tripId)
+//                .orElseThrow(() -> new IllegalArgumentException("Trip not found"));
+//
+//        Place place = placeRepository.findById(placeId)
+//                .orElseThrow(() -> new IllegalArgumentException("Place not found"));
+//
+//        TripVisitId tripVisitId = new TripVisitId(tripId, placeId);
+//
+//        return tripVisitRepository.findById(tripVisitId)
+//                .map(existingVisit -> {
+//                    existingVisit.setVisitTime(time);
+//                    TripVisit tripVisit = tripVisitRepository.save(existingVisit);
+//                    return tripVisitMapper.toDto(tripVisit);
+//                })
+//                .orElseGet(() -> {
+//                    TripVisit newVisit = tripVisitRepository.save(new TripVisit(trip, place, time));
+//                    return tripVisitMapper.toDto(newVisit);
+//                });
+//    }
 
-        Trip trip = tripRepository.findById(tripId)
-                .orElseThrow(() -> new IllegalArgumentException("Trip not found"));
 
-        Place place = placeRepository.findById(placeId)
-                .orElseThrow(() -> new IllegalArgumentException("Place not found"));
-
-        TripVisitId tripVisitId = new TripVisitId(tripId, placeId);
-
-        return tripVisitRepository.findById(tripVisitId)
-                .map(existingVisit -> {
-                    existingVisit.setVisitTime(time);
-                    TripVisit tripVisit = tripVisitRepository.save(existingVisit);
-                    return tripVisitMapper.toDto(tripVisit);
-                })
-                .orElseGet(() -> {
-                    TripVisit newVisit = tripVisitRepository.save(new TripVisit(trip, place, time));
-                    return tripVisitMapper.toDto(newVisit);
-                });
-    }
-
-
-    public void deleteTripVisit(Long tripId, Long placeId) {
-        TripVisitId tripVisitId = new TripVisitId(tripId, placeId);
-
-        tripVisitRepository.findById(tripVisitId).orElseThrow(() -> new IllegalArgumentException("Visit not found"));
-
-        tripVisitRepository.deleteById(tripVisitId);
-    }
+//    public void deleteTripVisit(Long tripId, Long placeId) {
+//        TripVisitId tripVisitId = new TripVisitId(tripId, placeId);
+//
+//        tripVisitRepository.findById(tripVisitId).orElseThrow(() -> new IllegalArgumentException("Visit not found"));
+//
+//        tripVisitRepository.deleteById(tripVisitId);
+//    }
 
     public Map<String, Object> viewTrip(Long tripId) {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new IllegalArgumentException("Trip not found"));
 
-        List<TripVisit> tripVisits = tripVisitRepository.findAllByTrip(trip);
-
-        List<Map<String, Object>> visits = tripVisits.stream()
-                .map(visit -> Map.of(
-                        "visitTime", visit.getVisitTime(),
-                        "place", visit.getPlace()
-                ))
-                .toList();
+        List<DestinationDto> destinations = destinationService.getDestinationsByTripId(trip.getTripId());
 
         return Map.of(
                 "basicInfo", tripMapper.toDto(trip),
-                "visits", visits
+                "destinations", destinations
         );
+
+//        List<TripVisit> tripVisits = tripVisitRepository.findAllByTrip(trip);
+//
+//        List<Map<String, Object>> visits = tripVisits.stream()
+//                .map(visit -> Map.of(
+//                        "visitTime", visit.getVisitTime(),
+//                        "place", visit.getPlace()
+//                ))
+//                .toList();
+//
+//        return Map.of(
+//                "basicInfo", tripMapper.toDto(trip),
+//                "visits", visits
+//        );
     }
 }
