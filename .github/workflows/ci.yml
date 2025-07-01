@@ -19,12 +19,12 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    # 3. Build Docker images using docker-compose
-    - name: Build and start services with Docker Compose
-      run: |
-        cd docker
-        docker-compose -f docker-compose.yml build
-        docker-compose -f docker-compose.yml up -d
+    # 3. Use Docker Compose from Docker Compose image
+    - name: Use Docker Compose with Docker image
+      uses: docker://docker/compose:1.29.2
+      with:
+        entrypoint: /bin/bash
+        args: -c "docker-compose -f docker-compose.yml build && docker-compose -f docker-compose.yml up -d"
 
     # 4. Optionally, Push Docker images to DockerHub (if desired)
     # - name: Push Docker images to DockerHub
