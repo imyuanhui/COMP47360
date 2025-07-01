@@ -32,3 +32,6 @@ export interface Preferences {
   categories: string[];
 }
 
+export type PlaceResult = google.maps.places.PlaceResult;
+
+
