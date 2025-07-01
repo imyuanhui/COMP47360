@@ -1,0 +1,80 @@
+[
+    {
+        "zone_id": "0",
+        "zone_name": "Times Square",
+        "lat": "40.758",
+        "lon": "-73.9855"
+    },
+    {
+        "zone_id": "1",
+        "zone_name": "Central Park",
+        "lat": "40.7678",
+        "lon": "-73.9718"
+    },
+    {
+        "zone_id": "2",
+        "zone_name": "Empire State Building",
+        "lat": "40.7484",
+        "lon": "-73.9857"
+    },
+    {
+        "zone_id": "3",
+        "zone_name": "Brooklyn Bridge",
+        "lat": "40.7061",
+        "lon": "-73.9969"
+    },
+    {
+        "zone_id": "4",
+        "zone_name": "Statue of Liberty Ferry",
+        "lat": "40.7033",
+        "lon": "-74.017"
+    },
+    {
+        "zone_id": "5",
+        "zone_name": "Rockefeller Center",
+        "lat": "40.7587",
+        "lon": "-73.9787"
+    },
+    {
+        "zone_id": "6",
+        "zone_name": "One World Trade Center",
+        "lat": "40.7127",
+        "lon": "-74.0134"
+    },
+    {
+        "zone_id": "7",
+        "zone_name": "Metropolitan Museum of Art",
+        "lat": "40.7794",
+        "lon": "-73.9632"
+    },
+    {
+        "zone_id": "8",
+        "zone_name": "Grand Central Terminal",
+        "lat": "40.7527",
+        "lon": "-73.9772"
+    },
+    {
+        "zone_id": "9",
+        "zone_name": "MoMA",
+        "lat": "40.7614",
+        "lon": "-73.9776"
+    },
+    {
+        "zone_id": "10",
+        "zone_name": "Roosevelt Island Tram",
+        "lat": "40.7614",
+        "lon": "-73.9496"
+    },
+    {
+        "zone_id": "11",
+        "zone_name": "Hudson River Kayaking",
+        "lat": "40.728",
+        "lon": "-74.011"
+    },
+    {
+        "zone_id": "12",
+        "zone_name": "The High Line",
+        "lat": "40.7479",
+        "lon": "-74.0049"
+    }
+]
