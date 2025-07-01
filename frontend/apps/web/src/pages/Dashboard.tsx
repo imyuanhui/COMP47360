@@ -116,8 +116,8 @@ const endDateTime = `${dateStr}T${tripTime.end}:00`;
     fetchProfile()
       .then((data) => {
         const newProfile = {
-          username: data.username,
-          email: data.email,
+          username: data.email,
+          email: data.username,
           password: "",
           oldPassword: ""
         };
