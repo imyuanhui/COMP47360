@@ -4,7 +4,11 @@ import { useNavigate } from "react-router-dom";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import toast from "react-hot-toast";
-import { signup as apiSignup, login as apiLogin, setAuthToken } from "../services/api";
+import {
+  signup as apiSignup,
+  login as apiLogin,
+  setAuthToken,
+} from "../services/api";
 
 export default function LandingPage() {
   const [showLogin, setShowLogin] = useState(false);
@@ -23,6 +27,7 @@ export default function LandingPage() {
   const handleLogin = async () => {
     try {
       const { accessToken } = await apiLogin(loginIdentifier, loginPassword);
+      localStorage.setItem("token", accessToken); //local storage
       setAuthToken(accessToken);
       toast.success("Logged in!");
       setShowLogin(false);
@@ -161,7 +166,9 @@ export default function LandingPage() {
                 FAQs
               </a>
             </div>
-            <p className="text-sm">&copy; {new Date().getFullYear()} SmartTrip NYC</p>
+            <p className="text-sm">
+              &copy; {new Date().getFullYear()} SmartTrip NYC
+            </p>
           </div>
         </footer>
       </div>
