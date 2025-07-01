@@ -2,15 +2,14 @@ package com.group4.smarttrip.services;
 
 import com.group4.smarttrip.dtos.WeatherDto;
 import com.group4.smarttrip.dtos.ZoneBusynessDto;
-import com.group4.smarttrip.entities.Flow;
 import com.group4.smarttrip.entities.Zone;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,12 +33,22 @@ public class BusynessService {
 
         double busynessScore = predictBusyness(zone, weather, time);
 
+        String busynessLevel = "undefined";
+        if (busynessScore <= 2000) {
+            busynessLevel = "low";
+        } else if (busynessScore <= 5000) {
+            busynessLevel = "med";
+        } else {
+            busynessLevel = "high";
+        }
+
         return new ZoneBusynessDto(
                 zoneId,
                 zone.getZoneName(),
                 zone.getCentralLat(),
                 zone.getCentralLon(),
                 busynessScore,
+                busynessLevel,
                 time);
     }
 
@@ -48,10 +57,24 @@ public class BusynessService {
         Zone zone = zoneService.getZoneById(zoneId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid zone id"));
 
-        Long timestamp = Timestamp.valueOf(time).getTime();
-        WeatherDto weather = weatherService.getForecastWeather(timestamp);
+        // Convert LocalDateTime → epoch seconds (Unix timestamp)
+        long unixSeconds = time.atZone(ZoneId.systemDefault()).toEpochSecond();
+
+        System.out.println(unixSeconds);
+
+        // Call WeatherService with correct timestamp
+        WeatherDto weather = weatherService.getForecastWeather(unixSeconds);
 
         double busynessScore = predictBusyness(zone, weather, time);
+
+        String busynessLevel = "undefined";
+        if (busynessScore <= 2000) {
+            busynessLevel = "low";
+        } else if (busynessScore <= 5000) {
+            busynessLevel = "med";
+        } else {
+            busynessLevel = "high";
+        }
 
         return new ZoneBusynessDto(
                 zoneId,
@@ -59,6 +82,7 @@ public class BusynessService {
                 zone.getCentralLat(),
                 zone.getCentralLon(),
                 busynessScore,
+                busynessLevel,
                 time);
     }
 

@@ -13,5 +13,6 @@ public class ZoneBusynessDto {
     private double centralLat;
     private double centralLon;
     private double busynessScore;
+    private String busynessLevel;
     private LocalDateTime time;
 }
