@@ -79,7 +79,7 @@ export default function Dashboard() {
     try {
       const dateStr = selectedDate.toISOString().split("T")[0];
       const startDateTime = `${dateStr}T${tripTime.start}:00`;
-      const endDateTime = `${dateStr}T${tripTime.end}:00`;
+const endDateTime = `${dateStr}T${tripTime.end}:00`;
 
       const token = localStorage.getItem("token");
       if (!token) {
@@ -360,79 +360,146 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Trending */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12 px-6">
-        {trending.map((t, i) => (
-          i === 1 ? (
-            <div
-              key={t.id}
-              className="col-span-1 row-span-2 bg-white shadow-lg rounded-lg overflow-hidden relative group"
-            >
-              <img src={`/assets/${t.image}`} className="h-96 w-full object-cover" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                <img src="/assets/tiktok.png" className="w-6 h-6 mb-2" />
-                <p className="text-xl font-bold text-center px-2 drop-shadow">{t.title}</p>
-              </div>
-            </div>
-          ) : (
-            <div
-              key={t.id}
-              className="bg-white shadow rounded-lg p-3 hover:shadow-xl transition"
-            >
-              <img
-                src={`/assets/${t.image}`}
-                className="h-40 w-full object-cover rounded"
-              />
-              <p className="mt-2 font-semibold text-center">{t.title}</p>
-            </div>
-          )
-        ))}
-      </div>
+    <h2 className="text-lg font-bold mb-4 px-6">My Trips</h2>
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-6 pb-12">
+  {[...myTrips, ...Array.from({ length: Math.max(0, 4 - myTrips.length) })].map((trip, idx) =>
+    trip ? (
+      <div
+  key={trip.tripId}
+  onClick={() => navigate(`/myitinerary/${trip.tripId}`)}
+  className="cursor-pointer bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 transition-transform transform hover:scale-105 hover:shadow-xl duration-300 relative"
+  style={{
+    backgroundImage: "url('/assets/pattern.svg')",
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "bottom right",
+    backgroundSize: "40%",
+  }}
+>
+  {/* Avatar / Location Badge */}
+  <div className="absolute top-3 left-3 bg-blue-100 text-blue-700 text-xs font-bold rounded-full px-2 py-0.5 shadow-sm">
 
-      {/* My Trips */}
-      <h2 className="text-lg font-bold mb-4 px-6">My Trips</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-6 pb-12">
-        {myTrips.length === 0 && !loading ? (
-          Array.from({ length: 4 }).map((_, idx) => (
-  <div
-    key={idx}
-    className="relative bg-gray-100 h-40 rounded-lg border-dashed border-2 border-gray-300 flex flex-col items-center justify-center text-sm text-gray-400 transition hover:bg-gray-200 hover:text-gray-600 hover:scale-105 hover:shadow-md overflow-hidden"
-  >
-    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
-    <svg
-      className="w-8 h-8 mb-1 text-gray-300 group-hover:text-gray-500 transition relative z-10"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-    </svg>
-    <span className="relative z-10">Empty Trip Slot</span>
   </div>
-))
 
-        ) : (
-          myTrips.map((trip) => (
-            <div
-              key={trip.tripId}
-              className="bg-white shadow rounded-lg p-4 relative group hover:shadow-xl hover:scale-105 transition transform duration-300"
-            >
-              <button
-                onClick={() => setConfirmDeleteId(trip.tripId)}
-                title="Delete trip"
-                className="absolute top-2 right-2 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition"
-              >
-                <Trash2 size={18} />
-              </button>
-              <h3 className="font-semibold mb-1">{trip.tripName}</h3>
-              <p className="text-sm text-gray-500">
-                {new Date(trip.startDateTime).toLocaleDateString()} – {new Date(trip.endDateTime).toLocaleDateString()}
-              </p>
-            </div>
-          ))
-        )}
+  {/* Gradient Top Header Bar */}
+  <div className="h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+
+  <div className="p-4 space-y-2">
+    {/* Trip Name */}
+    <h3 className="text-xl font-semibold text-[#03253D]">{trip.tripName}</h3>
+
+    {/* Date Range */}
+    <p className="text-sm text-gray-600 flex items-center gap-1">
+      📅 {new Date(trip.startDateTime).toLocaleDateString()} –{" "}
+      {new Date(trip.endDateTime).toLocaleDateString()}
+    </p>
+
+    {/* Days Left Badge */}
+    {(() => {
+      const tripDate = new Date(trip.startDateTime);
+      tripDate.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const daysLeft = Math.ceil((tripDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysLeft > 0) {
+        let badgeColor = "bg-green-100 text-green-800";
+        if (daysLeft === 1) badgeColor = "bg-red-100 text-red-700";
+        else if (daysLeft <= 3) badgeColor = "bg-yellow-100 text-yellow-700";
+
+        return (
+          <div className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${badgeColor}`}>
+            ⏰ {daysLeft === 1 ? "1 day left" : `${daysLeft} days left`}
+          </div>
+        );
+      }
+
+      return null;
+    })()}
+
+    {/* Destination Summary */}
+    <p className="text-xs text-gray-400 italic mt-1">
+      No destinations added yet.
+    </p>
+
+    {/* Delete Button */}
+    <div className="flex justify-end pt-2">
+      <button
+  onClick={(e) => {
+    e.stopPropagation(); // prevents triggering the card onClick
+    setConfirmDeleteId(trip.tripId);
+  }}
+
+        title="Delete trip"
+        className="text-sm text-red-500 hover:text-red-700"
+      >
+        ❌ Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+    ) : (
+      <div
+        key={`empty-${idx}`}
+        className="relative bg-gray-100 h-40 rounded-xl border-dashed border-2 border-gray-300 flex flex-col items-center justify-center text-sm text-gray-400 transition hover:bg-gray-200 hover:text-gray-600 hover:scale-105 hover:shadow-md overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
+        <svg
+          className="w-8 h-8 mb-1 text-gray-300 group-hover:text-gray-500 transition relative z-10"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+        <span className="relative z-10">Empty Trip Slot</span>
       </div>
+    )
+  )}
+</div>
+
+
+
+{/* 🔵 Trending Places - Now at Bottom */}
+<h2 className="text-lg font-bold mb-4 px-6">Trending Places</h2>
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12 px-6">
+  {trending.map((t, i) => (
+    i === 1 ? (
+      <div
+        key={t.id}
+        className="col-span-1 row-span-2 bg-white shadow-lg rounded-lg overflow-hidden relative group"
+      >
+        <img src={`/assets/${t.image}`} className="h-96 w-full object-cover" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+          <img src="/assets/tiktok.png" className="w-6 h-6 mb-2" />
+          <p className="text-xl font-bold text-center px-2 drop-shadow">{t.title}</p>
+        </div>
+      </div>
+    ) : (
+      <div
+        key={t.id}
+        className="bg-white shadow rounded-lg p-3 hover:shadow-xl transition"
+      >
+        <img
+          src={`/assets/${t.image}`}
+          className="h-40 w-full object-cover rounded"
+        />
+        <p className="mt-2 font-semibold text-center">{t.title}</p>
+      </div>
+    )
+  ))}
+
+  {/* 🔺 Additional Card for Empty Space */}
+  <div className="bg-white shadow rounded-lg p-3 hover:shadow-xl transition">
+    <img
+      src="/assets/extra.jpg"
+      className="h-40 w-full object-cover rounded"
+    />
+    <p className="mt-2 font-semibold text-center">Harlem Food Crawl</p>
+  </div>
+</div>
+
 
       {/* Confirm Delete Dialog */}
       {confirmDeleteId && (
