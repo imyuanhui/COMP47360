@@ -14,6 +14,8 @@ public class TripDto {
     private String tripName;
     private int numTravellers;
     private String thumbnailUrl;
+    private LocalDateTime startDateTime;
+    private LocalDateTime endDateTime;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
