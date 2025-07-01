@@ -44,10 +44,11 @@ export default function SavedPlaces() {
           >
             <PlaceCard
               place={p}
-              saved={true}
-              onAdd={() => {}}
-              /* ‘Remove’ link shown via card title click */
+              saved
+              onAdd={() => {}}          // no itinerary action here
               highlighted={highlightId === p.id}
+              hideItinerary={true}      // hides the “+ My Itinerary” button
+              showRating={false}        // ⬅️ suppresses the busyness line
             />
 
             {/* tiny remove link */}

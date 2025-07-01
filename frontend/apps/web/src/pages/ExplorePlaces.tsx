@@ -31,6 +31,7 @@ import MapPane   from '../components/MapPane';
 import { usePlacesSearch } from '../services/usePlacesSearch';
 import { useSavedPlaces   } from '../services/useSavedPlaces';
 import type { Place } from '../types';
+import { useItinerary } from '../services/useItinerary';   // ⬅️ new
 
 /* ------------------------------------------------------------------
  * Constants
@@ -73,6 +74,7 @@ export default function ExplorePlaces() {
   /* ───── Hooks ───── */
   const { isReady, fetchRandomPlaces, searchText, loadError } = usePlacesSearch();
   const { saved, addPlace } = useSavedPlaces();
+  const { entries: itinerary, add: addToItinerary } = useItinerary();
 
   /* ------------------------------------------------------------------
    * Helper: (re)fetch recommended places (10 random / filtered)
@@ -220,7 +222,15 @@ export default function ExplorePlaces() {
                 place={p}
                 saved={saved.some(sp => sp.id === p.id)}
                 onSave={addPlace}
-                onAdd={() => {} /* itinerary omitted here */}
+                onAdd={(id, time) => {
+                  const p = combined.find(pl => pl.id === id);
+                  if (!p) return;
+                
+                  /* try to add – alert if the slot is full */
+                  if (!addToItinerary(p, time)) {
+                    alert(`Only three places allowed at ${time}.`);
+                  }
+                }}
                 highlighted={highlightId === p.id}
               />
             </div>
