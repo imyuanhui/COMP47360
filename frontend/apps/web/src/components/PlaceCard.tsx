@@ -10,12 +10,13 @@
  *
  * The same component is used in:
  *   - Explore Places   (save button visible)
- *   - Saved Places     (save button hidden via onSave undefined)
+ *   - My Itinerary     (itinerary button hidden + timeSlot prop)
+ *   - Saved Places     (save button only, no busyness rating)
  *
  * Styling relies entirely on Tailwind classes—no extra CSS file.
  ***********************************************************************/
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Place } from '../types';
 
 /* ----------------------------- props ----------------------------- */
@@ -25,10 +26,13 @@ interface Props {
   onSave?: (place: Place) => void;                // save-list callback (optional)
   saved?: boolean;                                // disables save button
   highlighted: boolean;                           // blue border on hover
+  hideItinerary?: boolean;                        // hides "+ My Itinerary" button
+  showRating?: boolean;                           // toggles busyness rating line (default TRUE)
+  timeSlot?: string;                              // time used in My Itinerary view
 }
 
 /* Time slots shown in the itinerary dropdown (localisable later). */
-const TIMES = ['09:00', '12:00', '15:00', '18:00'];
+const TIMES = Array.from({ length: 10 }, (_, i) => `${(9 + i).toString().padStart(2, '0')}:00`);
 
 export default function PlaceCard({
   place,
@@ -36,18 +40,39 @@ export default function PlaceCard({
   onSave,
   saved = false,
   highlighted,
+  hideItinerary = false,
+  showRating = true,
+  timeSlot,
 }: Props) {
   const [openMenu, setOpenMenu] = useState(false);
+
+  /* ------- Esc‑key closes dropdown ------- */
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenMenu(false);
+    };
+    if (openMenu) window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [openMenu]);
 
   /* --- class helpers ------------------------------------------------ */
   const baseBtn  = 'w-28 px-2 py-1 text-xs rounded whitespace-nowrap transition-colors';
   const ghostBtn = `${baseBtn} bg-gray-100 hover:bg-gray-200`;
 
+  /* mock busyness rating */
+  const getRatingText = () => {
+    const levels = ['low', 'medium', 'high'];
+    const level = levels[Math.floor(Math.random() * levels.length)];
+    return timeSlot
+      ? `Busyness rating at ${timeSlot}: ${level}`
+      : `Current business rating: ${level}`;
+  };
+
   /* --- render ------------------------------------------------------- */
   return (
     <div
       className={`p-4 rounded-lg border shadow-sm transition-colors ${
-        highlighted ? 'border-blue-500' : 'border-gray-200'
+        highlighted ? 'border-blue-500' : 'border-gray-400'
       }`}
     >
       {/* ========== 1. thumbnail + textual details ========== */}
@@ -75,6 +100,11 @@ export default function PlaceCard({
             <p className="text-xs text-gray-600">Rating: {place.rating}/5</p>
           )}
 
+          {/* dynamic busyness rating (hidden on Saved Places) */}
+          {showRating && (
+            <p className="text-xs text-gray-600">{getRatingText()}</p>
+          )}
+
           {/* ========= 2. stacked action buttons (top-right) ========= */}
           <div className="absolute right-0 top-0 flex flex-col items-end space-y-1">
             {/* Save button – hidden on Saved Places page */}
@@ -92,43 +122,51 @@ export default function PlaceCard({
               </button>
             )}
 
-            {/* itinerary dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setOpenMenu(prev => !prev)}
-                className={ghostBtn}
-              >
-                + My Itinerary
-              </button>
+            {/* itinerary dropdown (optional) */}
+            {!hideItinerary && (
+              <div className="relative">
+                <button onClick={() => setOpenMenu(prev => !prev)} className={ghostBtn}>
+                  + My Itinerary
+                </button>
 
-              {openMenu && (
-                <div className="absolute right-0 top-7 z-10 w-44 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
-                  <p className="mb-2 text-sm font-semibold leading-none">Add to your Trip</p>
-                  {TIMES.map(t => (
-                    <button
-                      key={t}
-                      onClick={() => {
-                        onAdd(place.id, t);
-                        setOpenMenu(false);       // close dropdown
-                      }}
-                      className="w-full rounded px-2 py-1 text-left text-sm hover:bg-gray-100"
-                    >
-                      {t} &nbsp; + Add to timeslot
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                {openMenu && (
+                  <div className="absolute right-0 top-7 z-10 w-44 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-sm font-semibold leading-none">Add to your Trip</p>
+                      <button
+                        onClick={() => setOpenMenu(false)}
+                        className="text-sm text-gray-400 hover:text-gray-600"
+                        aria-label="Close"
+                      >
+                        x
+                      </button>
+                    </div>
+                    {TIMES.map(t => (
+                      <button
+                        key={t}
+                        onClick={() => {
+                          onAdd(place.id, t);
+                          setOpenMenu(false);
+                        }}
+                        className="w-full rounded px-2 py-1 text-left text-sm hover:bg-gray-100"
+                      >
+                        {t} &nbsp; + Add to timeslot
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* ========== 3. travel-time footer ========== */}
-      <div className="mt-3 flex justify-between pr-4 text-xs text-gray-500">
+      {/* <div className="mt-3 flex justify-between pr-4 text-xs text-gray-500">
         <span>🚶 {place.travel.walk} mins</span>
         <span>🚗 {place.travel.drive} mins</span>
         <span>🚇 {place.travel.transit} mins</span>
-      </div>
+      </div> */}
     </div>
   );
 }
