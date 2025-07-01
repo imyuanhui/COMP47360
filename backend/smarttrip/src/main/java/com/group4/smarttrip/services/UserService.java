@@ -9,6 +9,7 @@ import com.group4.smarttrip.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -27,15 +28,22 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        String newEmail = request.getEmail();
-        String newUsername = request.getUsername();
+        // Normalize and trim incoming email/username
+        String newEmail = request.getEmail() != null ? request.getEmail().trim() : null;
+        String newUsername = request.getUsername() != null ? request.getUsername().trim() : null;
 
-        if (newEmail != null && userRepository.existsByEmail(newEmail)) {
-            throw new IllegalArgumentException("Email already in use");
+        // Validate email update
+        if (StringUtils.hasText(newEmail) && !newEmail.equals(user.getEmail())) {
+            if (userRepository.existsByEmail(newEmail)) {
+                throw new IllegalArgumentException("The provided email is already in use");
+            }
         }
 
-        if (newUsername != null && userRepository.existsByUsername(newUsername)) {
-            throw new IllegalArgumentException("Username already in use");
+        // Validate username update
+        if (StringUtils.hasText(newUsername) && !newUsername.equals(user.getUsername())) {
+            if (userRepository.existsByUsername(newUsername)) {
+                throw new IllegalArgumentException("The provided username is already in use");
+            }
         }
 
         userMapper.update(request, user);
