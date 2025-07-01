@@ -19,14 +19,32 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    # 3. Use Docker Compose from Docker Compose image
-    - name: Use Docker Compose with Docker image
-      uses: docker://docker/compose:1.29.2
+    # 3. Cache Docker Compose binary
+    - name: Cache Docker Compose binary
+      uses: actions/cache@v2
       with:
-        entrypoint: /bin/bash
-        args: -c "docker-compose -f docker-compose.yml build && docker-compose -f docker-compose.yml up -d"
+        path: /usr/local/bin/docker-compose
+        key: ${{ runner.os }}-docker-compose-${{ hashFiles('**/docker-compose.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-docker-compose-
 
-    # 4. Optionally, Push Docker images to DockerHub (if desired)
+    # 4. Install Docker Compose if not cached
+    - name: Install Docker Compose
+      run: |
+        if ! command -v docker-compose; then
+          sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+        fi
+        docker-compose --version  # Verify installation
+
+    # 5. Build and start services with Docker Compose
+    - name: Build and start services with Docker Compose
+      run: |
+        cd docker
+        docker-compose -f docker-compose.yml build
+        docker-compose -f docker-compose.yml up -d
+
+    # 6. Optionally, Push Docker images to DockerHub (if desired)
     # - name: Push Docker images to DockerHub
     #   if: github.event_name == 'push'
     #   run: |
