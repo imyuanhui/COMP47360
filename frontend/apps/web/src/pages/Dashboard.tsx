@@ -27,7 +27,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [profile, setProfile] = useState({ username: "", email: "", password: "" });
+  const [profile, setProfile] = useState({ username: "", email: "", password: "", oldPassword: ""  });
+  const [originalProfile, setOriginalProfile] = useState({
+  username: "",
+  email: ""
+});
+
   const [loggingOut, setLoggingOut] = useState(false);
   const navigate = useNavigate();
 
@@ -107,12 +112,22 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (showProfile) {
-      fetchProfile()
-        .then((data) => setProfile({ username: data.username, email: data.email, password: "" }))
-        .catch(() => toast.error("Failed to load profile"));
-    }
-  }, [showProfile]);
+  if (showProfile) {
+    fetchProfile()
+      .then((data) => {
+        const newProfile = {
+          username: data.username,
+          email: data.email,
+          password: "",
+          oldPassword: ""
+        };
+        setProfile(newProfile);
+        setOriginalProfile({ username: data.username, email: data.email });
+      })
+      .catch(() => toast.error("Failed to load profile"));
+  }
+}, [showProfile]);
+
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -129,18 +144,42 @@ export default function Dashboard() {
   };
 
   const handleProfileUpdate = async () => {
-    try {
-      await updateProfile({ username: profile.username, email: profile.email });
-      if (profile.password) {
-        await changePassword("dummy-old-password", profile.password); // Replace as needed
-      }
-      toast.success("Profile updated successfully!");
-      setShowProfile(false);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to update profile");
+  try {
+    const updates: any = {};
+
+    if (profile.username !== originalProfile.username) {
+      updates.username = profile.username;
     }
-  };
+
+    if (profile.email !== originalProfile.email) {
+      updates.email = profile.email;
+    }
+
+    const isProfileChanged = Object.keys(updates).length > 0;
+    const isPasswordChange = profile.oldPassword && profile.password;
+
+    if (!isProfileChanged && !isPasswordChange) {
+      toast("No changes to update");
+      return;
+    }
+
+    if (isProfileChanged) {
+      await updateProfile(updates);
+    }
+
+    if (isPasswordChange) {
+      await changePassword(profile.oldPassword, profile.password);
+    }
+
+    toast.success("Profile updated successfully!");
+    setShowProfile(false);
+  } catch (err: any) {
+    console.error("Profile update error:", err.response?.data || err.message);
+    toast.error(err.response?.data?.message || "Failed to update profile");
+  }
+};
+
+
 
   const handleDeleteTrip = async (tripId: string) => {
     try {
@@ -214,6 +253,15 @@ export default function Dashboard() {
               className="w-full border px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
+           <div>
+  <label className="block text-sm font-medium mb-1 text-gray-700">Old Password</label>
+  <input
+    type="password"
+    value={profile.oldPassword}
+    onChange={(e) => setProfile({ ...profile, oldPassword: e.target.value })}
+    className="w-full border px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+  />
+</div>
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">New Password</label>
             <input
@@ -223,6 +271,8 @@ export default function Dashboard() {
               className="w-full border px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
+        
+
 
           <div className="flex justify-between pt-2">
             <button
