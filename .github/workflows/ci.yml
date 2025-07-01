@@ -15,63 +15,20 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 2. Set up Java for backend build
-    - name: Set up Java 21
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '21'
-        
-   # Grant execute permissions to mvnw
-    - name: Grant execute permissions to mvnw
-      run: chmod +x backend/smarttrip/mvnw
-      
-    # 3. Build the backend with Maven
-    - name: Build backend with Maven
-      run: |
-        cd backend/smarttrip
-        ./mvnw clean package -DskipTests
-        
-    # 4. Set up Docker Buildx
+    # 2. Set up Docker Buildx
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    # 5. Build the backend Docker image
-    - name: Build backend Docker image
+    # 3. Build Docker images using docker-compose
+    - name: Build and start services with Docker Compose
       run: |
         cd docker
-        docker build -f Dockerfile.backend -t smarttrip-backend .
+        docker-compose -f docker-compose.yml build
+        docker-compose -f docker-compose.yml up -d
 
-   # 6. Build Flask ML Docker image
-    - name: Build Flask ML Docker image
-      run: |
-        cd docker
-        docker build -f Dockerfile.flask-ml -t smarttrip-flask-ml .
-
-  # 7. Build Nginx Docker image (with frontend build inside Dockerfile)
-    - name: Build Nginx Docker image with frontend build
-      run: |
-        cd docker
-        docker build -f Dockerfile.nginx -t smarttrip-nginx .
-
-# 8. Push Docker images to DockerHub (Optional)
-    - name: Push backend Docker image to DockerHub
-      if: github.event_name == 'push'
-      run: |
-        echo ${{ secrets.DOCKER_USERNAME }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-        docker tag smarttrip-backend ${{ secrets.DOCKER_USERNAME }}/smarttrip-backend:latest
-        docker push ${{ secrets.DOCKER_USERNAME }}/smarttrip-backend:latest
-
-    - name: Push Flask ML Docker image to DockerHub
-      if: github.event_name == 'push'
-      run: |
-        echo ${{ secrets.DOCKER_USERNAME }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-        docker tag smarttrip-flask-ml ${{ secrets.DOCKER_USERNAME }}/smarttrip-flask-ml:latest
-        docker push ${{ secrets.DOCKER_USERNAME }}/smarttrip-flask-ml:latest
-
-    - name: Push Nginx Docker image to DockerHub
-      if: github.event_name == 'push'
-      run: |
-        echo ${{ secrets.DOCKER_USERNAME }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-        docker tag smarttrip-nginx ${{ secrets.DOCKER_USERNAME }}/smarttrip-nginx:latest
-        docker push ${{ secrets.DOCKER_USERNAME }}/smarttrip-nginx:latest
+    # 4. Optionally, Push Docker images to DockerHub (if desired)
+    # - name: Push Docker images to DockerHub
+    #   if: github.event_name == 'push'
+    #   run: |
+    #     echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+    #     docker-compose -f docker/docker-compose.yml push
