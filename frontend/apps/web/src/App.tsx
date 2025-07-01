@@ -28,6 +28,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/myitinerary/:tripId" element={<MyItinerary />} />
         <Route path="/explore" element={<ExplorePlaces />} />
         <Route path="/itinerary" element={<MyItinerary />} />
         <Route path="/saved" element={<SavedPlaces />} />
