@@ -21,7 +21,11 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '21'
-
+        
+   # Grant execute permissions to mvnw
+    - name: Grant execute permissions to mvnw
+      run: chmod +x backend/smarttrip/mvnw
+      
     # 3. Build the backend with Maven
     - name: Build backend with Maven
       run: |
