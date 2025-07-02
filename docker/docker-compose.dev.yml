@@ -11,8 +11,8 @@ services:
       POSTGRES_DB: smart-trip
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    # ports:
-    #   - "5432:5432"
+    ports:
+      - "5432:5432"
     networks:
       - smarttrip-net
 
@@ -20,13 +20,14 @@ services:
     build:
       context: ../backend/smarttrip
     container_name: smarttrip-backend
-    # ports:
-    #   - "8080:8080"
+    ports:
+      - "8080:8080"
     depends_on:
       - postgres
       - flask-ml
     environment:
-      SPRING_SERVER_ADDRESS: 0.0.0.0
+      # SPRING_SERVER_ADDRESS: 0.0.0.0
+      SPRING_APPLICATION_JSON: '{ "server.address": "0.0.0.0" }'
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/smart-trip
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 1234
@@ -38,26 +39,8 @@ services:
     build:
       context: ../backend/flask-model-api
     container_name: smarttrip-ml
-    # ports:
-    #   - "5000:5000"
-    networks:
-      - smarttrip-net
-
-
-  nginx:
-    build:
-      context: ../frontend/apps/web
-    
-    container_name: smarttrip-nginx
     ports:
-      - "80:80"
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-      
-    depends_on:
-    
-      - backend
-      - flask-ml
+      - "5000:5000"
     networks:
       - smarttrip-net
 
