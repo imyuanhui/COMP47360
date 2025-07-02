@@ -32,9 +32,11 @@ interface Props {
   left: React.ReactNode;
   /** React tree for the full-height map or other visual on the right */
   right: React.ReactNode;
+  tripName?: string;
+  tripDate?: string; 
 }
 
-export default function Layout({ activeTab, left, right }: Props) {
+export default function Layout({ activeTab, left, right, tripName, tripDate }: Props) {
   const navigate = useNavigate();
 
   /* Tab labels + target route.  Easy to extend later. */
@@ -75,11 +77,14 @@ export default function Layout({ activeTab, left, right }: Props) {
             <div className="absolute inset-0 flex items-end bg-black/30 p-6">
               <div>
                 <h2 className="text-3xl font-semibold text-white">
-                  New York with Family
+                {tripName || 'Your Trip'}
                 </h2>
-                <div className="mt-1 text-sm text-gray-200">
-                  06.12.35&nbsp;|&nbsp;5&nbsp;|&nbsp;<span role="img" aria-label="people">👤</span>
-                </div>
+                {tripDate && (
+  <div className="mt-1 text-sm text-gray-200">
+    {tripDate}
+  </div>
+)}
+
               </div>
             </div>
           </div>
