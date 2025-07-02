@@ -1,7 +1,7 @@
 // src/App.tsx
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast'; // ✅ Added for toast notifications
+import { Toaster } from 'react-hot-toast'; 
 
 // Page Imports
 import LandingPage from './pages/Landingpage';
@@ -15,9 +15,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <Toaster
-        position="top-right"
+        position="top-center"
         toastOptions={{
-          duration: 3000,
+          duration: 750,
           style: {
             background: '#333',
             color: '#fff',
