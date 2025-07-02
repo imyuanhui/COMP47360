@@ -9,6 +9,12 @@ import {
   login as apiLogin,
   setAuthToken,
 } from "../services/api";
+// Utility function to validate email format
+const isValidEmail = (email: string): boolean => {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
+};
+
 
 export default function LandingPage() {
   const [showLogin, setShowLogin] = useState(false);
@@ -51,13 +57,23 @@ export default function LandingPage() {
 
 
  const handleSignup = async () => {
+  if (!signupUsername || !signupEmail || !signupPassword) {
+    toast.error("Please fill in all fields.");
+    return;
+  }
+
+  if (!isValidEmail(signupEmail)) {
+    toast.error("Please enter a valid email address.");
+    return;
+  }
+
   try {
     await apiSignup(signupUsername, signupEmail, signupPassword);
     toast.success("Account created! Please log in.");
     setShowSignup(false);
     setShowLogin(true);
   } catch (err: any) {
-    const msg = err.response?.data?.error || "Signup failed"; // ✅ fixed here
+    const msg = err.response?.data?.error || "Signup failed";
     console.error("Signup error:", msg);
 
     if (msg.toLowerCase().includes("email")) {
@@ -69,7 +85,6 @@ export default function LandingPage() {
     }
   }
 };
-
 
 
 
