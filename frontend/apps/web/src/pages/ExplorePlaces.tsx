@@ -31,11 +31,15 @@ import MapPane   from '../components/MapPane';
 import { usePlacesSearch } from '../services/usePlacesSearch';
 import { useSavedPlaces   } from '../services/useSavedPlaces';
 import type { Place } from '../types';
-import { useItinerary } from '../services/useItinerary';   // ⬅️ new
+import { useItinerary } from '../services/useItinerary';  
+import { useLocation } from 'react-router-dom';
+ // ⬅️ new
 
 /* ------------------------------------------------------------------
  * Constants
  * ------------------------------------------------------------------*/
+
+
 const DEFAULT_CENTRE: google.maps.LatLngLiteral = { lat: 40.7831, lng: -73.9712 };
 
 const FILTER_OPTIONS = [
@@ -52,6 +56,16 @@ type FilterType = typeof FILTER_OPTIONS[number]['type'];
  * Component
  * =========================================================================*/
 export default function ExplorePlaces() {
+  const location = useLocation();
+  console.log("Location state:", location.state); 
+  const tripName = location.state?.tripName || "Your Trip";
+  const tripDateRaw = location.state?.tripDate;
+const tripDate = tripDateRaw
+  ? new Date(tripDateRaw).toLocaleDateString()
+  : "Date not set";
+  console.log("tripDateRaw:", tripDateRaw); 
+
+
   /* ───── UI state ───── */
   const [query,   setQuery]   = useState('');
   const [loading, setLoading] = useState(false);
@@ -315,7 +329,8 @@ export default function ExplorePlaces() {
    * =========================================================================*/
   return (
     <>
-      <Layout activeTab="Explore Places" left={left} right={right} />
+      <Layout activeTab="Explore Places" tripName={tripName}  tripDate={tripDate}     left={left} right={right} />
+      
       {FilterModal}
     </>
   );
