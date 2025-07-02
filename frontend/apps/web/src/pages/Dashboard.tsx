@@ -17,6 +17,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Trash2 } from "lucide-react";
 
+
 export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [tripTime, setTripTime] = useState({ start: "09:00", end: "17:00" });
@@ -100,7 +101,13 @@ const endDateTime = `${dateStr}T${tripTime.end}:00`;
       setShowModal(false);
       await loadTrips();
 
-      navigate(`/explore?name=${newTripName}&date=${dateStr}&start=${tripTime.start}&end=${tripTime.end}`);
+      navigate('/explore', {
+  state: {
+    tripName: newTripName,
+    tripDate: selectedDate.toISOString(),
+  }
+});
+
     } catch (err: any) {
       toast.error("Failed to plan trip");
       console.error("Trip creation error:", err?.response?.data || err.message);
@@ -376,7 +383,17 @@ const endDateTime = `${dateStr}T${tripTime.end}:00`;
     return (
       <div
         key={trip.tripId}
-        onClick={() => navigate(`/myitinerary/${trip.tripId}`)}
+       onClick={() =>
+  navigate('/explore', {
+    state: {
+      tripId: trip.tripId,
+      tripName: trip.tripName,
+      tripDate: trip.startDateTime,
+    }
+  })
+
+}
+
         className="cursor-pointer bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 transition-transform transform hover:scale-105 hover:shadow-xl duration-300 relative"
         style={{
           backgroundImage: "url('/assets/pattern.svg')",
