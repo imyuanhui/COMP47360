@@ -194,8 +194,9 @@ const endDateTime = `${dateStr}T${tripTime.end}:00`;
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans">
-      <Toaster position="top-right" />
+    <div className="min-h-screen bg-white text-gray-900 font-sans container mx-auto px-4 md:px-0">
+
+      <Toaster position="top-center" />
 
       {/* Profile Section */}
 
@@ -229,7 +230,7 @@ const endDateTime = `${dateStr}T${tripTime.end}:00`;
             </button>
             <button
               onClick={() => setEditMode(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow"
+              className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-white-300 shadow"
             >
               Edit Profile
             </button>
@@ -283,7 +284,7 @@ const endDateTime = `${dateStr}T${tripTime.end}:00`;
             </button>
             <button
               onClick={handleProfileUpdate}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+             className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-white-300 shadow"
             >
               Save Changes
             </button>
@@ -295,27 +296,28 @@ const endDateTime = `${dateStr}T${tripTime.end}:00`;
 )}
 
 
-      <header className="flex justify-between items-center mb-8 px-6 pt-6">
+      <header className="flex justify-between items-center mb-8 pt-6">
   <div className="flex items-center gap-3">
-    <img src="/assets/logo.jpg" alt="Logo" className="h-8 w-8 rounded-full" />
+    <img src="/assets/logo.jpg" alt="Logo" className="h-8 w-8" />
     <h1 className="text-2xl font-bold text-[#03253D]">SmartTrip NYC</h1>
   </div>
   <div className="space-x-4">
-    <button onClick={() => setShowProfile(true)} className="hover:underline">
+    <button onClick={() => setShowProfile(true)} className="text-gray-600 hover:text-gray-800">
       Profile
     </button>
-    <button onClick={handleLogout} disabled={loggingOut} className="text-red-600 hover:underline">
+    <button onClick={handleLogout} disabled={loggingOut} className="text-gray-600 hover:text-red-600">
       {loggingOut ? "Logging out..." : "Logout"}
     </button>
   </div>
 </header>
       {/* Plan a new trip */}
-      <div className="flex justify-end mb-6 px-6">
+      <div className="flex justify-end mb-6">
+
         <button
           onClick={() => setShowModal(true)}
-          className="bg-[#03253D] text-white px-6 py-2 rounded-full shadow hover:scale-105 transition"
+        
         >
-          + Plan a new trip
+        
         </button>
       </div>
 
@@ -360,110 +362,82 @@ const endDateTime = `${dateStr}T${tripTime.end}:00`;
         </div>
       )}
 
-    <h2 className="text-lg font-bold mb-4 px-6">My Trips</h2>
-<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-6 pb-12">
-  {[...myTrips, ...Array.from({ length: Math.max(0, 4 - myTrips.length) })].map((trip, idx) =>
-    trip ? (
+   <h2 className="text-lg font-bold mb-4">My Trips</h2>
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-12">
+
+  {myTrips.map((trip) => {
+    const tripDate = new Date(trip.startDateTime);
+    const today = new Date();
+    tripDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    const daysLeft = Math.ceil((tripDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+
+    return (
       <div
-  key={trip.tripId}
-  onClick={() => navigate(`/myitinerary/${trip.tripId}`)}
-  className="cursor-pointer bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 transition-transform transform hover:scale-105 hover:shadow-xl duration-300 relative"
-  style={{
-    backgroundImage: "url('/assets/pattern.svg')",
-    backgroundRepeat: "no-repeat",
-    backgroundPosition: "bottom right",
-    backgroundSize: "40%",
-  }}
->
-  {/* Avatar / Location Badge */}
-  <div className="absolute top-3 left-3 bg-blue-100 text-blue-700 text-xs font-bold rounded-full px-2 py-0.5 shadow-sm">
-
-  </div>
-
-  {/* Gradient Top Header Bar */}
-  <div className="h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
-
-  <div className="p-4 space-y-2">
-    {/* Trip Name */}
-    <h3 className="text-xl font-semibold text-[#03253D]">{trip.tripName}</h3>
-
-    {/* Date Range */}
-    <p className="text-sm text-gray-600 flex items-center gap-1">
-      📅 {new Date(trip.startDateTime).toLocaleDateString()} –{" "}
-      {new Date(trip.endDateTime).toLocaleDateString()}
-    </p>
-
-    {/* Days Left Badge */}
-    {(() => {
-      const tripDate = new Date(trip.startDateTime);
-      tripDate.setHours(0, 0, 0, 0);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const daysLeft = Math.ceil((tripDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysLeft > 0) {
-        let badgeColor = "bg-green-100 text-green-800";
-        if (daysLeft === 1) badgeColor = "bg-red-100 text-red-700";
-        else if (daysLeft <= 3) badgeColor = "bg-yellow-100 text-yellow-700";
-
-        return (
-          <div className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${badgeColor}`}>
-            ⏰ {daysLeft === 1 ? "1 day left" : `${daysLeft} days left`}
-          </div>
-        );
-      }
-
-      return null;
-    })()}
-
-    {/* Destination Summary */}
-    <p className="text-xs text-gray-400 italic mt-1">
-      No destinations added yet.
-    </p>
-
-    {/* Delete Button */}
-    <div className="flex justify-end pt-2">
-      <button
-  onClick={(e) => {
-    e.stopPropagation(); // prevents triggering the card onClick
-    setConfirmDeleteId(trip.tripId);
-  }}
-
-        title="Delete trip"
-        className="text-sm text-red-500 hover:text-red-700"
+        key={trip.tripId}
+        onClick={() => navigate(`/myitinerary/${trip.tripId}`)}
+        className="cursor-pointer bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 transition-transform transform hover:scale-105 hover:shadow-xl duration-300 relative"
+        style={{
+          backgroundImage: "url('/assets/pattern.svg')",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "bottom right",
+          backgroundSize: "40%",
+        }}
       >
-        ❌ Delete
-      </button>
-    </div>
-  </div>
-</div>
-
-    ) : (
-      <div
-        key={`empty-${idx}`}
-        className="relative bg-gray-100 h-40 rounded-xl border-dashed border-2 border-gray-300 flex flex-col items-center justify-center text-sm text-gray-400 transition hover:bg-gray-200 hover:text-gray-600 hover:scale-105 hover:shadow-md overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
-        <svg
-          className="w-8 h-8 mb-1 text-gray-300 group-hover:text-gray-500 transition relative z-10"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-        </svg>
-        <span className="relative z-10">Empty Trip Slot</span>
-      </div>
-    )
+        <div className="p-4 space-y-2">
+          <h3 className="text-xl font-semibold text-[#03253D]">{trip.tripName}</h3>
+          <div className="flex flex-col text-sm text-gray-600">
+  <span className="leading-tight">
+    {new Date(trip.startDateTime).toLocaleDateString()} –{" "}
+    {new Date(trip.endDateTime).toLocaleDateString()}
+  </span>
+  {daysLeft > 0 && (
+    <span className="text-xs font-semibold text-gray-800 mt-0.5">
+      {daysLeft === 1 ? "1 day left" : `${daysLeft} days left`}
+    </span>
   )}
 </div>
+
+          <p className="text-xs text-gray-400 italic mt-1">No destinations added yet.</p>
+          <div className="flex justify-end pt-2">
+           <button
+  onClick={(e) => {
+    e.stopPropagation();
+    setConfirmDeleteId(trip.tripId);
+  }}
+  className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
+>
+  <span className="text-base leading-none"></span>
+  Delete
+</button>
+
+          </div>
+        </div>
+      </div>
+    );
+  })}
+
+  {/* Plan a New Trip card */}
+  <div
+  className="bg-white border-2 border-gray-300 rounded-xl flex items-center justify-center h-48 w-full hover:shadow-md transition cursor-pointer"
+  onClick={() => setShowModal(true)}
+>
+
+    <button className="bg-[#03253D] text-white px-10 py-2 rounded-full text-sm font-medium shadow hover:scale-105 transition whitespace-nowrap">
+      + Plan a new trip
+    </button>
+  </div>
+</div>
+
 
 
 
 {/* 🔵 Trending Places - Now at Bottom */}
-<h2 className="text-lg font-bold mb-4 px-6">Trending Places</h2>
-<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12 px-6">
+<h2 className="text-lg font-bold mb-4">Trending Places</h2>
+
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
+
   {trending.map((t, i) => (
     i === 1 ? (
       <div
