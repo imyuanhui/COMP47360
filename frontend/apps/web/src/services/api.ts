@@ -231,6 +231,43 @@ export function deleteVisit(tripId: number, placeId: number): Promise<void> {
     .then(() => {});
 }
 
+
+// ------------------------
+// Destinations (Visits)
+// ------------------------
+
+/**
+ * Add a new destination (visit) to a trip.
+ */
+export const addDestination = (tripId: number, destinationData: {
+  tripId: number;
+  destinationName: string;
+  lat: number;
+  lon: number;
+  visitTime: string;
+}) => {
+  return api.post(`/api/trips/${tripId}/destinations`, destinationData);
+};
+
+/**
+ * Update an existing destination (visit) of a trip.
+ */
+export const updateDestination = (tripId: number, destinationData: {
+  destinationId: number;
+  visitTime: string;
+}) => {
+  return api.put(`/api/trips/${tripId}/destinations`, destinationData);
+};
+
+/**
+ * Delete a destination (visit) from a trip.
+ */
+export const deleteDestination = (tripId: number, destinationId: number) => {
+  return api.delete(`/api/trips/${tripId}/destinations`, {
+    params: { destinationId },
+  });
+};
+
 // === Preferences  ===
 export function fetchPreferences(): Promise<Preferences> {
   return api.get("/preferences").then((r) => r.data);
