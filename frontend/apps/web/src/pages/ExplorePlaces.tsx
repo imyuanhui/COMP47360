@@ -58,11 +58,24 @@ type FilterType = typeof FILTER_OPTIONS[number]['type'];
 export default function ExplorePlaces() {
   const location = useLocation();
   console.log("Location state:", location.state); 
-  const tripName = location.state?.tripName || "Your Trip";
-  const tripDateRaw = location.state?.tripDate;
-const tripDate = tripDateRaw
-  ? new Date(tripDateRaw).toLocaleDateString()
-  : "Date not set";
+const tripIdFromState = location.state?.tripId;
+const tripNameFromState = location.state?.tripName;
+const tripDateFromState = location.state?.tripDate;
+
+// Save to localStorage if state is available
+useEffect(() => {
+  if (tripIdFromState) {
+    localStorage.setItem("activeTripId", tripIdFromState);
+    localStorage.setItem("activeTripName", tripNameFromState || "Your Trip");
+    localStorage.setItem("activeTripDate", tripDateFromState || "");
+  }
+}, [tripIdFromState, tripNameFromState, tripDateFromState]);
+
+// Read from localStorage fallback
+const tripName = tripNameFromState || localStorage.getItem("activeTripName") || "Your Trip";
+const tripDateRaw = tripDateFromState || localStorage.getItem("activeTripDate");
+const tripDate = tripDateRaw ? new Date(tripDateRaw).toLocaleDateString() : "Date not set";
+
   console.log("tripDateRaw:", tripDateRaw); 
 
 
