@@ -23,6 +23,11 @@ export function clearAuthToken() {
   delete api.defaults.headers.common["Authorization"];
 }
 
+const authHeader = () => ({
+  Authorization: `Bearer ${localStorage.getItem('token')}`,
+});
+
+
 // === Auth Interfaces ===
 export interface UserPayload {
   id: string;
@@ -54,18 +59,15 @@ export function login(
   });
 }
 
-export async function logout(): Promise<{ message: string }> {
+export async function logout() {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Token not found");
 
   setAuthToken(token);
-  const response = await api.post("/logout");
 
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
   clearAuthToken();
-
-  return response.data;
 }
 
 export function refreshToken(
@@ -131,7 +133,7 @@ export function changePassword(
 
 // === Trips ===
 export interface Trip {
-  tripId: number;
+  tripId: string;
   tripName: string;
   startDateTime: string;
   endDateTime: string;
@@ -146,35 +148,16 @@ export interface Visit {
 
 export interface TripDetails {
   basicInfo: Trip;
-  visits: {
-    visitTime: string;
-    place: { placeId: number; placeName: string };
+  destinations: {
+    tripId: string,
+    destinationId: number,
+    destinationName: string,
+    visitTime: string
   }[];
 }
 
 export function fetchMyTrips(params = { page: 1 }): Promise<{ Trips: Trip[] }> {
   return api.get("/trips", { params }).then((r) => r.data);
-}
-
-export function fetchItinerary(): Promise<ItineraryItem[]> {
-  return fetchMyTrips({ page: 1 }).then((r) => {
-    return r.Trips.map((trip) => ({
-      id: trip.tripId.toString(),
-      place: {
-        id: trip.tripId.toString(),
-        name: trip.tripName,
-        lat: 0,
-        lng: 0,
-        address: "Address not provided",
-        travel: {
-          walk: 0,
-          drive: 0,
-          transit: 0,
-        },
-      },
-      time: trip.startDateTime,
-    }));
-  });
 }
 
 export function createTrip(tripData: {
@@ -187,12 +170,12 @@ export function createTrip(tripData: {
   return api.post("/trips", tripData).then((r) => r.data);
 }
 
-export function fetchTripDetails(tripId: number): Promise<TripDetails> {
+export function fetchTripDetails(tripId: string): Promise<TripDetails> {
   return api.get(`/trips/${tripId}`).then((r) => r.data);
 }
 
 export function updateTrip(
-  tripId: number,
+  tripId: string,
   updates: {
     tripName?: string;
     startDateTime?: string;
@@ -213,15 +196,15 @@ export const deleteTrip = async (tripId: string) => {
   return res.data;
 };
 
-export function addOrUpdateVisit(tripId: number, visit: Visit): Promise<any> {
+export function addOrUpdateVisit(tripId: string, visit: Visit): Promise<any> {
   return api.post(`/trips/${tripId}/visits`, visit).then((r) => r.data);
 }
 
-export function updateVisit(tripId: number, visit: Visit): Promise<any> {
+export function updateVisit(tripId: string, visit: Visit): Promise<any> {
   return api.put(`/trips/${tripId}/visits`, visit).then((r) => r.data);
 }
 
-export function deleteVisit(tripId: number, placeId: number): Promise<void> {
+export function deleteVisit(tripId: string, placeId: number): Promise<void> {
   return api
     .request({
       method: "DELETE",
@@ -239,31 +222,31 @@ export function deleteVisit(tripId: number, placeId: number): Promise<void> {
 /**
  * Add a new destination (visit) to a trip.
  */
-export const addDestination = (tripId: number, destinationData: {
-  tripId: number;
+export const addDestination = (tripId: string, destinationData: {
+  tripId: string;
   destinationName: string;
   lat: number;
   lon: number;
   visitTime: string;
 }) => {
-  return api.post(`/api/trips/${tripId}/destinations`, destinationData);
+  return api.post(`/trips/${tripId}/destinations`, destinationData);
 };
 
 /**
  * Update an existing destination (visit) of a trip.
  */
-export const updateDestination = (tripId: number, destinationData: {
+export const updateDestination = (tripId: string, destinationData: {
   destinationId: number;
   visitTime: string;
 }) => {
-  return api.put(`/api/trips/${tripId}/destinations`, destinationData);
+  return api.put(`/trips/${tripId}/destinations`, destinationData);
 };
 
 /**
  * Delete a destination (visit) from a trip.
  */
-export const deleteDestination = (tripId: number, destinationId: number) => {
-  return api.delete(`/api/trips/${tripId}/destinations`, {
+export const deleteDestination = (tripId: string, destinationId: number) => {
+  return api.delete(`/trips/${tripId}/destinations`, {
     params: { destinationId },
   });
 };
