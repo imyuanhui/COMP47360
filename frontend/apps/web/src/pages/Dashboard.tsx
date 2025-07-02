@@ -101,12 +101,11 @@ const endDateTime = `${dateStr}T${tripTime.end}:00`;
       setShowModal(false);
       await loadTrips();
 
-      navigate('/explore', {
-  state: {
-    tripName: newTripName,
-    tripDate: selectedDate.toISOString(),
-  }
-});
+      localStorage.setItem("activeTripName", newTripName);
+localStorage.setItem("activeTripDate", selectedDate.toISOString());
+
+navigate('/explore');
+
 
     } catch (err: any) {
       toast.error("Failed to plan trip");
