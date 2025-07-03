@@ -4,27 +4,51 @@
  * Page that lists the user’s saved attractions and shows them on a map.
  ***********************************************************************/
 
-import React, { useState } from 'react';
-import Layout    from '../components/Layout';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import Layout from '../components/Layout';
 import PlaceCard from '../components/PlaceCard';
-import MapPane   from '../components/MapPane';
+import MapPane from '../components/MapPane';
 import { useSavedPlaces } from '../services/useSavedPlaces';
+import { fetchTripDetails, setAuthToken } from '../services/api';
 import type { Place } from '../types';
 
 /* default map centre: Manhattan */
 const DEFAULT_CENTRE: google.maps.LatLngLiteral = { lat: 40.7831, lng: -73.9712 };
 
 export default function SavedPlaces() {
-  /* saved-places context hook */
-  const { saved, removePlace } = useSavedPlaces();
+  const { tripId } = useParams();
+const { saved, addPlace, removePlace, loading } = useSavedPlaces(tripId!);
 
-  /* map + highlight state (mirrors ExplorePlaces) */
+
+  const [tripName, setTripName] = useState("Your Trip");
+  const [tripDate, setTripDate] = useState("Date not set");
+
+  useEffect(() => {
+    if (!tripId) return;
+
+    const loadTrip = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        setAuthToken(token);
+
+        const trip = await fetchTripDetails(tripId);
+        setTripName(trip.basicInfo.tripName);
+        setTripDate(new Date(trip.basicInfo.startDateTime).toLocaleDateString());
+      } catch (err) {
+        console.error("Failed to fetch trip in SavedPlaces:", err);
+      }
+    };
+
+    loadTrip();
+  }, [tripId]);
+
   const [focusCoord, setFocusCoord] = useState<google.maps.LatLngLiteral | null>(null);
-  const [mapZoom,    setMapZoom]    = useState(13);
-  const [highlightId,setHighlight]  = useState<string | null>(null);
-  const [infoPlace,  setInfoPlace]  = useState<Place | null>(null);
+  const [mapZoom, setMapZoom] = useState(13);
+  const [highlightId, setHighlight] = useState<string | null>(null);
+  const [infoPlace, setInfoPlace] = useState<Place | null>(null);
 
-  /* ---------------- LEFT: list of saved cards ---------------- */
   const left = (
     <div className="space-y-4 pr-1">
       {saved.length === 0 ? (
@@ -45,13 +69,11 @@ export default function SavedPlaces() {
             <PlaceCard
               place={p}
               saved
-              onAdd={() => {}}          // no itinerary action here
+              onAdd={() => {}}
               highlighted={highlightId === p.id}
-              hideItinerary={true}      // hides the “+ My Itinerary” button
-              showRating={false}        // ⬅️ suppresses the busyness line
+              hideItinerary={true}
+              showRating={false}
             />
-
-            {/* tiny remove link */}
             <button
               onClick={() => removePlace(p.id)}
               className="ml-2 text-xs text-red-600 hover:underline"
@@ -64,7 +86,6 @@ export default function SavedPlaces() {
     </div>
   );
 
-  /* ---------------- RIGHT: map ---------------- */
   const right = (
     <MapPane
       places={saved}
@@ -81,6 +102,14 @@ export default function SavedPlaces() {
     />
   );
 
-  /* ---------------- render ---------------- */
-  return <Layout activeTab="Saved Places" left={left} right={right} />;
+  return (
+    <Layout
+      activeTab="Saved Places"
+      tripId={tripId}
+      tripName={tripName}
+      tripDate={tripDate}
+      left={left}
+      right={right}
+    />
+  );
 }
