@@ -62,56 +62,62 @@ export default function Dashboard() {
   };
 
   const handleExploreRedirect = async () => {
-    if (!selectedDate || !newTripName.trim()) {
-      toast.error("Please complete all fields.");
+  if (!selectedDate || !newTripName.trim()) {
+    toast.error("Please complete all fields.");
+    return;
+  }
+
+  const today = new Date();
+  const selectedOnlyDate = new Date(selectedDate);
+  selectedOnlyDate.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+
+  if (selectedOnlyDate < today) {
+    toast.error("Please select a valid future date.");
+    return;
+  }
+
+  try {
+    const dateStr = selectedDate.toISOString().split("T")[0];
+    const startDateTime = `${dateStr}T${tripTime.start}:00`;
+    const endDateTime = `${dateStr}T${tripTime.end}:00`;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("User not authenticated");
       return;
     }
+    setAuthToken(token);
 
-    const today = new Date();
-    const selectedOnlyDate = new Date(selectedDate);
-    selectedOnlyDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
+    // 🟢 CREATE the trip and capture the response
+    const createdTrip = await createTrip({
+      tripName: newTripName,
+      startDateTime,
+      endDateTime,
+      numTravellers: 1,
+      thumbnailUrl: "",
+    });
 
-    if (selectedOnlyDate < today) {
-      toast.error("Please select a valid future date.");
-      return;
-    }
+    toast.success("Trip created successfully!");
+    setShowModal(false);
+    await loadTrips();
 
-    try {
-      const dateStr = selectedDate.toISOString().split("T")[0];
-      const startDateTime = `${dateStr}T${tripTime.start}:00`;
-const endDateTime = `${dateStr}T${tripTime.end}:00`;
-
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("User not authenticated");
-        return;
-      }
-      setAuthToken(token);
-
-      await createTrip({
-        tripName: newTripName,
-        startDateTime,
-        endDateTime,
-        numTravellers: 1,
-        thumbnailUrl: "",
-      });
-
-      toast.success("Trip created successfully!");
-      setShowModal(false);
-      await loadTrips();
-
-      localStorage.setItem("activeTripName", newTripName);
-localStorage.setItem("activeTripDate", selectedDate.toISOString());
-
-navigate('/explore');
+    // 🟢 Navigate to /explore/:tripId (not using state)
+    navigate(`/explore/${createdTrip.tripId}`, {
+  state: {
+    tripStartDate: createdTrip.startDateTime.split("T")[0], // 'YYYY-MM-DD'
+    tripName: createdTrip.tripName,
+    tripId: createdTrip.tripId,
+  },
+});
 
 
-    } catch (err: any) {
-      toast.error("Failed to plan trip");
-      console.error("Trip creation error:", err?.response?.data || err.message);
-    }
-  };
+  } catch (err: any) {
+    toast.error("Failed to plan trip");
+    console.error("Trip creation error:", err?.response?.data || err.message);
+  }
+};
+
 
   useEffect(() => {
     loadTrips();
@@ -382,16 +388,17 @@ navigate('/explore');
     return (
       <div
         key={trip.tripId}
-       onClick={() =>
-  navigate('/explore', {
+     onClick={() => {
+  navigate(`/explore/${trip.tripId}`, {
     state: {
-      tripId: trip.tripId,
+      tripStartDate: trip.startDateTime.split("T")[0], // pass start date 'YYYY-MM-DD'
       tripName: trip.tripName,
-      tripDate: trip.startDateTime,
-    }
-  })
+      tripId: trip.tripId,
+    },
+  });
+}}
 
-}
+
 
         className="cursor-pointer bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 transition-transform transform hover:scale-105 hover:shadow-xl duration-300 relative"
         style={{
