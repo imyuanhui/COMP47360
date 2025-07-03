@@ -11,8 +11,6 @@ services:
       POSTGRES_DB: smart-trip
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    # ports:
-    #   - "5432:5432"
     networks:
       - smarttrip-net
 
@@ -20,8 +18,6 @@ services:
     build:
       context: ../backend/smarttrip
     container_name: smarttrip-backend
-    # ports:
-    #   - "8080:8080"
     depends_on:
       - postgres
       - flask-ml
@@ -38,8 +34,6 @@ services:
     build:
       context: ../backend/flask-model-api
     container_name: smarttrip-ml
-    # ports:
-    #   - "5000:5000"
     networks:
       - smarttrip-net
 
