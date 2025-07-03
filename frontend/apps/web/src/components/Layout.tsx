@@ -26,26 +26,26 @@ import { Link, useNavigate } from 'react-router-dom';
 
 /* ----------------------------- props ----------------------------- */
 interface Props {
-  /** Which nav-tab is active (for underline / colour) */
-  activeTab: 'Explore Places' | 'My Itinerary' | 'Saved Places' | 'Update Preferences';
-  /** React tree for the left scrolling panel (list, search, …) */
+  activeTab: string;
+  tripName: string;
+  tripDate: string;
+  tripId?: string; // ✅ add this
   left: React.ReactNode;
-  /** React tree for the full-height map or other visual on the right */
   right: React.ReactNode;
-  tripName?: string;
-  tripDate?: string; 
 }
 
-export default function Layout({ activeTab, left, right, tripName, tripDate }: Props) {
+export default function Layout({ activeTab, left, right, tripName, tripDate, tripId }: Props) {
+
   const navigate = useNavigate();
 
   /* Tab labels + target route.  Easy to extend later. */
   const tabs = [
-    { label: 'Explore Places',     path: '/explore'      },
-    { label: 'My Itinerary',       path: '/itinerary'    },
-    { label: 'Saved Places',       path: '/saved'        },
-    { label: 'Update Preferences', path: '/preferences'  },
-  ];
+  { label: 'Explore Places',     path: tripId ? `/explore/${tripId}` : '/' },
+  { label: 'My Itinerary',       path: tripId ? `/myitinerary/${tripId}` : '/itinerary' },
+  { label: 'Saved Places', path: tripId ? `/saved/${tripId}` : '/' },
+  { label: 'Update Preferences', path: '/preferences' },
+];
+
 
   return (
     <div className="flex h-screen overflow-hidden">
