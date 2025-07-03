@@ -32,7 +32,10 @@ import { usePlacesSearch } from '../services/usePlacesSearch';
 import { useSavedPlaces   } from '../services/useSavedPlaces';
 import type { Place } from '../types';
 import { useItinerary } from '../services/useItinerary';  
-import { useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { fetchTripDetails, setAuthToken } from '../services/api';
+
+
  // ⬅️ new
 
 /* ------------------------------------------------------------------
@@ -56,27 +59,9 @@ type FilterType = typeof FILTER_OPTIONS[number]['type'];
  * Component
  * =========================================================================*/
 export default function ExplorePlaces() {
-  const location = useLocation();
-  console.log("Location state:", location.state); 
-const tripIdFromState = location.state?.tripId;
-const tripNameFromState = location.state?.tripName;
-const tripDateFromState = location.state?.tripDate;
-
-// Save to localStorage if state is available
-useEffect(() => {
-  if (tripIdFromState) {
-    localStorage.setItem("activeTripId", tripIdFromState);
-    localStorage.setItem("activeTripName", tripNameFromState || "Your Trip");
-    localStorage.setItem("activeTripDate", tripDateFromState || "");
-  }
-}, [tripIdFromState, tripNameFromState, tripDateFromState]);
-
-// Read from localStorage fallback
-const tripName = tripNameFromState || localStorage.getItem("activeTripName") || "Your Trip";
-const tripDateRaw = tripDateFromState || localStorage.getItem("activeTripDate");
-const tripDate = tripDateRaw ? new Date(tripDateRaw).toLocaleDateString() : "Date not set";
-
-  console.log("tripDateRaw:", tripDateRaw); 
+  const { tripId } = useParams();
+const [tripName, setTripName] = useState("Your Trip");
+const [tripDate, setTripDate] = useState("Date not set");
 
 
   /* ───── UI state ───── */
@@ -100,8 +85,10 @@ const tripDate = tripDateRaw ? new Date(tripDateRaw).toLocaleDateString() : "Dat
 
   /* ───── Hooks ───── */
   const { isReady, fetchRandomPlaces, searchText, loadError } = usePlacesSearch();
-  const { saved, addPlace } = useSavedPlaces();
-  const { entries: itinerary, add: addToItinerary } = useItinerary();
+  const { saved, addPlace } = useSavedPlaces(tripId!); // ✅ correct
+
+  const { entries: itinerary, add: addToItinerary } = useItinerary(tripId!);
+;
 
   /* ------------------------------------------------------------------
    * Helper: (re)fetch recommended places (10 random / filtered)
@@ -141,6 +128,27 @@ const tripDate = tripDateRaw ? new Date(tripDateRaw).toLocaleDateString() : "Dat
 
   /* 1️⃣  Initial load + whenever filters change */
   useEffect(refreshRecommended, [refreshRecommended]);
+ useEffect(() => {
+  if (!tripId) return;
+
+  const loadTrip = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      setAuthToken(token);
+
+      const trip = await fetchTripDetails(tripId);
+      setTripName(trip.basicInfo.tripName);
+      setTripDate(new Date(trip.basicInfo.startDateTime).toLocaleDateString());
+    } catch (err) {
+      console.error("Failed to fetch trip details:", err);
+    }
+  };
+
+  loadTrip();
+}, [tripId]);
+
+
 
   /* 2️⃣  Text search overlay */
   useEffect(() => {
@@ -249,15 +257,16 @@ const tripDate = tripDateRaw ? new Date(tripDateRaw).toLocaleDateString() : "Dat
                 place={p}
                 saved={saved.some(sp => sp.id === p.id)}
                 onSave={addPlace}
-                onAdd={(id, time) => {
-                  const p = combined.find(pl => pl.id === id);
-                  if (!p) return;
-                
-                  /* try to add – alert if the slot is full */
-                  if (!addToItinerary(p, time)) {
-                    alert(`Only three places allowed at ${time}.`);
-                  }
-                }}
+                onAdd={async (id, time) => {
+  const p = combined.find(pl => pl.id === id);
+  if (!p) return;
+
+  const success = await addToItinerary(p, time);
+  if (!success) {
+    alert(`Only three places allowed at ${time}.`);
+  }
+}}
+
                 highlighted={highlightId === p.id}
               />
             </div>
@@ -342,7 +351,15 @@ const tripDate = tripDateRaw ? new Date(tripDateRaw).toLocaleDateString() : "Dat
    * =========================================================================*/
   return (
     <>
-      <Layout activeTab="Explore Places" tripName={tripName}  tripDate={tripDate}     left={left} right={right} />
+      <Layout
+  activeTab="Explore Places"
+  tripId={tripId}
+  tripName={tripName}
+  tripDate={tripDate}
+  left={left}
+  right={right}
+/>
+
       
       {FilterModal}
     </>
