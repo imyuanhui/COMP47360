@@ -1,65 +1,100 @@
-/****************************************************************************************
- * useSavedPlaces.ts
- * ------------------------------------------------------------------
- * React hook that wraps “Saved Places” persistence.
- *
- *  • saved[]          Current list of saved <Place> objects
- *  • addPlace(p)      Idempotently add a place (no duplicates)
- *  • removePlace(id)  Delete by place.id
- *
- *  Implementation details
- *  ──────────────────────
- *    • Uses localStorage as the backing store (key = 'savedPlaces')
- *    • Serialises to JSON on every mutation; hydrates on mount
- *    • No external context provider needed — simply import the hook
- *      anywhere you need access to the saved list.
- *****************************************************************************************/
-
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Place } from '../types';
+import {
+  setAuthToken,
+  fetchTripDetails,
+  addDestination,
+  deleteDestination,
+} from './api';
 
-const LS_KEY = 'savedPlaces';               // localStorage key
-
-export function useSavedPlaces() {
-  /* ------------------------------------------------------------------
-   * 1. Reactive state for the saved list
-   * ------------------------------------------------------------------*/
+export function useSavedPlaces(tripId: string) {
   const [saved, setSaved] = useState<Place[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  /* ------------------------------------------------------------------
-   * 2. Hydrate from localStorage on first render
-   * ------------------------------------------------------------------*/
+  // Load saved places from backend
   useEffect(() => {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) setSaved(JSON.parse(raw) as Place[]);
-  }, []);
+    const loadSaved = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        setAuthToken(token);
 
-  /* ------------------------------------------------------------------
-   * 3. Persist to localStorage whenever the list changes
-   * ------------------------------------------------------------------*/
-  useEffect(() => {
-    localStorage.setItem(LS_KEY, JSON.stringify(saved));
-  }, [saved]);
+        const trip = await fetchTripDetails(tripId);
 
-  /* ------------------------------------------------------------------
-   * 4a. addPlace() – ignore duplicates by place.id
-   * ------------------------------------------------------------------*/
-  const addPlace = useCallback(
-    (p: Place) =>
-      setSaved(prev => (prev.some(q => q.id === p.id) ? prev : [...prev, p])),
-    [],
-  );
+        const places: Place[] = trip.destinations.map((d) => ({
+          id: d.destinationId.toString(),
+          name: d.destinationName,
+          address: '',
+          imageUrl: '',
+          lat: 0,
+          lng: 0,
+          rating: 0,
+          crowdTime: '',
+          visitTime: d.visitTime || '',
+          travel: { walk: 0, drive: 0, transit: 0 },
+        }));
 
-  /* ------------------------------------------------------------------
-   * 4b. removePlace() – simple filter by id
-   * ------------------------------------------------------------------*/
-  const removePlace = useCallback(
-    (id: string) => setSaved(prev => prev.filter(p => p.id !== id)),
-    [],
-  );
+        setSaved(places);
+      } catch (err) {
+        console.error("Error loading saved places:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  /* ------------------------------------------------------------------
-   * 5. Public API
-   * ------------------------------------------------------------------*/
-  return { saved, addPlace, removePlace };
+    if (tripId) {
+      loadSaved();
+    }
+  }, [tripId]);
+
+  // Add a place with validation and error handling
+  const addPlace = async (place: Place) => {
+    try {
+      if (!place.name) {
+        console.warn("Place name missing, cannot save");
+        return;
+      }
+
+      const placePayload = {
+  tripId: tripId.toString(),   // convert to string
+  destinationName: place.name,
+  lat: typeof place.lat === "number" ? place.lat : 40.7831,
+  lon: typeof place.lng === "number" ? place.lng : -73.9712,
+ visitTime: new Date().toISOString(),
+ // or any valid time string your backend expects
+
+};
+
+
+      console.log("▶️ Sending place to backend:", placePayload);
+
+      await addDestination(tripId, placePayload);
+
+      setSaved((prev) => (prev.some(p => p.id === place.id) ? prev : [...prev, place]));
+    } catch (err: any) {
+      if (err.response?.data) {
+        console.error("❌ Backend response error:", err.response.data);
+      } else if (err.message) {
+        console.error("❌ Error message:", err.message);
+      } else {
+        console.error("❌ Unknown error:", err);
+      }
+      alert("Failed to save place. Please try again later.");
+    }
+  };
+
+  // Remove a place
+  const removePlace = async (placeId: string) => {
+    try {
+      const dest = saved.find((p) => p.id === placeId);
+      if (!dest) return;
+
+      await deleteDestination(tripId, parseInt(dest.id));
+      setSaved((prev) => prev.filter((p) => p.id !== placeId));
+    } catch (err) {
+      console.error("Error removing saved place:", err);
+    }
+  };
+
+  return { saved, addPlace, removePlace, loading };
 }
