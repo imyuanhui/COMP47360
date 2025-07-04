@@ -29,7 +29,7 @@ import SearchBar from '../components/SearchBar';
 import PlaceCard from '../components/PlaceCard';
 import MapPane   from '../components/MapPane';
 import { usePlacesSearch } from '../services/usePlacesSearch';
-import { useSavedPlaces   } from '../services/useSavedPlaces';
+
 import type { Place } from '../types';
 import { useItinerary } from '../services/useItinerary';  
 import { useParams } from 'react-router-dom';
@@ -85,7 +85,34 @@ const [tripDate, setTripDate] = useState("Date not set");
 
   /* ───── Hooks ───── */
   const { isReady, fetchRandomPlaces, searchText, loadError } = usePlacesSearch();
-  const { saved, addPlace } = useSavedPlaces(tripId!); // ✅ correct
+  const [saved, setSaved] = useState<Place[]>([]);
+  const saveOnlyPlace = (place: Place) => {
+  if (!saved.some(p => p.id === place.id)) {
+    setSaved(prev => [...prev, place]);
+  }
+};
+// Load saved places from localStorage when the page opens
+useEffect(() => {
+  const key = `saved-${tripId}`;
+  const stored = localStorage.getItem(key);
+  if (stored) setSaved(JSON.parse(stored));
+}, [tripId]);
+
+// Save to localStorage whenever saved[] changes
+useEffect(() => {
+  const key = `saved-${tripId}`;
+  localStorage.setItem(key, JSON.stringify(saved));
+}, [saved, tripId]);
+const togglePlace = (place: Place) => {
+  const isAlreadySaved = saved.some(p => p.id === place.id);
+  if (isAlreadySaved) {
+    setSaved(prev => prev.filter(p => p.id !== place.id));
+  } else {
+    setSaved(prev => [...prev, place]);
+  }
+};
+
+// ✅ correct
 
   const { entries: itinerary, add: addToItinerary } = useItinerary(tripId!);
 ;
@@ -231,49 +258,50 @@ const [tripDate, setTripDate] = useState("Date not set");
 
       {/* Scrollable list of PlaceCards */}
       <div className="space-y-4 pr-1">
-        {loading ? (
-          /* skeleton UI */
-          Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-24 rounded-lg bg-gray-100 animate-pulse" />
-          ))
-        ) : combined.length === 0 ? (
-          <p className="mt-4 text-center text-gray-500">No places found.</p>
-        ) : (
-          combined.map(p => (
-            <div
-              key={p.id}
-              /* hover highlight syncs with marker hover */
-              onMouseEnter={() => setHighlight(p.id)}
-              onMouseLeave={() => setHighlight(null)}
-              /* click card → zoom map + open InfoWindow */
-              onClick={() => {
-                setHighlight(p.id);
-                setFocusCoord({ lat: p.lat, lng: p.lng });
-                setMapZoom(15);
-                setInfoPlace(p);
-              }}
-            >
-              <PlaceCard
-                place={p}
-                saved={saved.some(sp => sp.id === p.id)}
-                onSave={addPlace}
-                onAdd={async (id, time) => {
-  const p = combined.find(pl => pl.id === id);
-  if (!p) return;
+  {loading ? (
+    Array.from({ length: 6 }).map((_, i) => (
+      <div key={i} className="h-24 rounded-lg bg-gray-100 animate-pulse" />
+    ))
+  ) : combined.length === 0 ? (
+    <p className="mt-4 text-center text-gray-500">No places found.</p>
+  ) : (
+    combined.map(p => {
+      const isSaved = saved.some(sp => sp.id === p.id);
+      const isInItinerary = itinerary.some(i => i.place.id === p.id);
 
-  const success = await addToItinerary(p, time);
-  if (!success) {
-    alert(`Only three places allowed at ${time}.`);
-  }
-}}
+      return (
+        <div
+          key={p.id}
+          onMouseEnter={() => setHighlight(p.id)}
+          onMouseLeave={() => setHighlight(null)}
+          onClick={() => {
+            setHighlight(p.id);
+            setFocusCoord({ lat: p.lat, lng: p.lng });
+            setMapZoom(15);
+            setInfoPlace(p);
+          }}
+        >
+          <PlaceCard
+            place={p}
+            saved={isSaved}
+            onSave={saveOnlyPlace}
+            onAdd={async (id, time) => {
+              const selectedPlace = combined.find(pl => pl.id === id);
+              if (!selectedPlace) return;
 
-                highlighted={highlightId === p.id}
-              />
-            </div>
-          ))
-        )}
-      </div>
-    </>
+              const success = await addToItinerary(selectedPlace, time);
+              if (!success) {
+                alert(`Only three places allowed at ${time}.`);
+              }
+            }}
+            highlighted={highlightId === p.id}
+          />
+        </div>
+      );
+    })
+  )}
+</div>
+</>
   );
 
   /* =========================================================================
