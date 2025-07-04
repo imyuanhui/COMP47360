@@ -113,7 +113,11 @@ export default function PlaceCard({
             {onSave && (
               <button
                 disabled={saved}
-                onClick={() => onSave(place)}
+                onClick={(e) => {
+  e.stopPropagation(); // prevent parent click
+  onSave(place);
+}}
+
                 className={
                   saved
                     ? `${baseBtn} bg-green-100 text-green-700 cursor-default`
@@ -145,10 +149,12 @@ export default function PlaceCard({
                     {TIMES.map(t => (
                       <button
                         key={t}
-                        onClick={() => {
-                          onAdd(place.id, t);
-                          setOpenMenu(false);
-                        }}
+                        onClick={(e) => {
+  e.stopPropagation(); // prevent parent click
+  onAdd(place.id, t);
+  setOpenMenu(false);
+}}
+
                         className="w-full rounded px-2 py-1 text-left text-sm hover:bg-gray-100"
                       >
                         {t} &nbsp; + Add to timeslot
