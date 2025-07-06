@@ -3,7 +3,7 @@ import type { Place, ItineraryItem, Preferences } from "../types";
 
 // === Axios Configuration ===
 const api = axios.create({
-  baseURL: "http://localhost:8080/api", //http instead of https
+  baseURL: "/api", 
   headers: {
     "Content-Type": "application/json",
   },
