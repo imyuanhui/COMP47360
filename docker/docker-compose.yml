@@ -22,11 +22,11 @@ services:
       - postgres
       - flask-ml
     environment:
-      SPRING_SERVER_ADDRESS: 0.0.0.0
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/smart-trip
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: 1234
-      ML_SERVICE_URL: http://flask-ml:5000
+      # SPRING_SERVER_ADDRESS: 0.0.0.0
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      ML_SERVICE_URL: ${ML_SERVICE_URL}
     networks:
       - smarttrip-net
 
