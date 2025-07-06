@@ -2,6 +2,7 @@
 node_modules/
 build/
 .env
+.env.prod
 
 # Java (Spring Boot)
 target/
