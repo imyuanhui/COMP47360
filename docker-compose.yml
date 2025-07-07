@@ -16,7 +16,7 @@ services:
 
   backend:
     build:
-      context: ../backend/smarttrip
+      context: ./backend/smarttrip
     container_name: smarttrip-backend
     depends_on:
       - postgres
@@ -28,17 +28,16 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       ML_SERVICE_URL: ${ML_SERVICE_URL}
     ports:
-      - "18080:8080"  # 宿主机暴露端口，供宿主机 Nginx 反代
+      - "18080:8080" # 宿主机暴露端口，供宿主机 Nginx 反代
     networks:
       - smarttrip-net
 
   flask-ml:
     build:
-      context: ../backend/flask-model-api
+      context: ./backend/flask-model-api
     container_name: smarttrip-ml
     networks:
       - smarttrip-net
-
 
 volumes:
   postgres-data:
