@@ -28,6 +28,12 @@ public class Place {
     @JoinColumn(name = "zone_id")
     private Zone zone;
 
+    @Column(nullable = false)
     private String category;
-    private String priceLevel;
+
+    private double estimatedDuration;
+
+    @Transient
+    private double predictedBusyness;
+
 }

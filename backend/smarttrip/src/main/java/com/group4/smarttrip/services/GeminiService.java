@@ -66,7 +66,7 @@ public class GeminiService {
                 "[\"Times Square\", \"Central Park\", \"Empire State Building\", \"Brooklyn Bridge\", \"Statue of Liberty Ferry\", \"Rockefeller Center\", \"One World Trade Center\", \"Metropolitan Museum of Art\", \"Grand Central Terminal\", \"MoMA\", \"Roosevelt Island Tram\", \"Hudson River Kayaking\", \"The High Line\"]\n" +
                 "\n" +
                 "Here is the list of allowed place categories you must choose from:\n" +
-                "[\"aquarium\", \"artwork\", \"attraction\", \"books\", \"cafe\", \"fast_food\", \"food_court\", \"gallery\", \"gift\", \"ice_cream\", \"jewelry\", \"library\", \"massage\", \"museum\", \"nightclub\", \"pub\", \"restaurant\", \"toys\", \"viewpoint\", \"zoo\"]\n" +
+                "[\"aquarium\", \"artwork\", \"attraction\", \"books\", \"cafe\", \"fast_food\", \"food_court\", \"gallery\", \"gift\", \"ice_cream\", \"jewelry\", \"library\", \"massage\", \"museum\", \"restaurant\", \"toys\", \"viewpoint\", \"zoo\"]\n" +
                 "\n" +
                 "- If user input doesn’t specify a location, set \"zoneName\" to null.\n" +
                 "- If user specifies a location similar to one of these zones, match it to the closest zone name from the list.\n" +
