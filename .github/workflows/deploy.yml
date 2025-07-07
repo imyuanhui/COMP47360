@@ -26,14 +26,28 @@ jobs:
         run: npm run build
         working-directory: frontend/apps/web
 
-      - name: Upload frontend to server
+      - name: Upload frontend to server (temporary dir)
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "frontend/apps/web/dist/*"
-          target: "/var/www/smarttrip"
+          target: "/home/student/smarttrip-temp"
+
+      - name: Deploy frontend via SSH (move & permission)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo mkdir -p /var/www/smarttrip
+            sudo chown -R student:student /var/www/smarttrip
+            sudo rm -rf /var/www/smarttrip/*
+            sudo mv /home/student/smarttrip-temp/* /var/www/smarttrip/
+            sudo chown -R www-data:www-data /var/www/smarttrip
+            rm -rf /home/student/smarttrip-temp
 
       - name: Deploy backend via SSH
         uses: appleboy/ssh-action@master
