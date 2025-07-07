@@ -37,4 +37,5 @@ public class ItineraryServiceTest {
         assertTrue(totalDuration <= userPreferences.getDuration(), "Total itinerary duration should fit in time budget");
 
     }
+
 }
