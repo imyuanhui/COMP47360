@@ -9,7 +9,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**") // allow all endpoints
-                .allowedOrigins("http://localhost:5173","https://smarttrip.duckdns.org")
+                .allowedOrigins("https://smarttrip.duckdns.org")
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);

@@ -5,10 +5,8 @@ services:
     image: postgres:15
     container_name: smarttrip-postgres
     restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: smart-trip
+    env_file:
+      - .env
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
@@ -21,14 +19,10 @@ services:
     depends_on:
       - postgres
       - flask-ml
-    environment:
-      # SPRING_SERVER_ADDRESS: 0.0.0.0
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      ML_SERVICE_URL: ${ML_SERVICE_URL}
+    env_file:
+      - .env
     ports:
-      - "18080:8080" # 宿主机暴露端口，供宿主机 Nginx 反代
+      - "18080:8080"
     networks:
       - smarttrip-net
 
