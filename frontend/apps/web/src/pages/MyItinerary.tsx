@@ -11,7 +11,7 @@ const SLOTS = Array.from({ length: 10 }, (_, i) =>
   `${(9 + i).toString().padStart(2, '0')}:00`,
 );
 
-const DEFAULT_CENTRE: google.maps.LatLngLiteral = { lat: 40.7831, lng: -73.9712 };
+const DEFAULT_CENTRE: google.maps.LatLngLiteral = { lat: 40.7422, lng: -73.9880 };
 
 export default function MyItinerary() {
   const { tripId } = useParams();
@@ -78,17 +78,12 @@ export default function MyItinerary() {
                   <PlaceCard
                     place={p}
                     onAdd={() => {}}
+                    onRemove={() => remove(p.id, slot)}
                     saved
                     highlighted={highlightId === p.id}
                     hideItinerary={true}
                     timeSlot={slot}
                   />
-                  <button
-                    onClick={() => remove(p.id, slot)}
-                    className="ml-2 text-xs text-red-600 hover:underline"
-                  >
-                    remove
-                  </button>
                 </div>
               ))}
             </div>
