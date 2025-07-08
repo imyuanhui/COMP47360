@@ -13,7 +13,6 @@ export default function Header({ activeTab, tripId }: HeaderProps) {
   { name: 'Explore Places', path: tripId ? `/explore/${tripId}` : '/' },
   { name: 'My Itinerary',   path: tripId ? `/myitinerary/${tripId}` : '/itinerary' },
   { name: 'Saved Places',   path: tripId ? `/saved/${tripId}` : '/' },
-  { name: 'Update Preferences', path: '/preferences' },
 ];
 
 
@@ -33,11 +32,10 @@ export default function Header({ activeTab, tripId }: HeaderProps) {
           ))}
         </nav>
       </div>
-      <nav className="space-x-4 text-gray-700">
-        <a href="#" className="hover:underline">Profile</a>
-        <a href="#" className="hover:underline">Settings</a>
-        <a href="#" className="hover:underline">Logout</a>
-      </nav>
+        <nav className="space-x-4 text-gray-700">
+        <Link to="/dashboard" className="hover:underline">Dashboard</Link>
+        <a href="#"         className="hover:underline">Logout</a>
+        </nav>
     </header>
   );
 }
