@@ -197,7 +197,7 @@ export const deleteTrip = async (tripId: string) => {
 };
 
 export function addOrUpdateVisit(tripId: string, visit: Visit): Promise<any> {
-  return api.post(`/trips/${tripId}/visits`, visit).then((r) => r.data);
+  return api.post(`/trips/${tripId}/destinations`, visit).then((r) => r.data);
 }
 
 export function updateVisit(tripId: string, visit: Visit): Promise<any> {
@@ -223,7 +223,6 @@ export function deleteVisit(tripId: string, placeId: number): Promise<void> {
  * Add a new destination (visit) to a trip.
  */
 export const addDestination = (tripId: string, destinationData: {
-  tripId: string;
   destinationName: string;
   lat: number;
   lon: number;
@@ -231,6 +230,8 @@ export const addDestination = (tripId: string, destinationData: {
 }) => {
   return api.post(`/trips/${tripId}/destinations`, destinationData);
 };
+
+
 
 /**
  * Update an existing destination (visit) of a trip.
@@ -259,6 +260,23 @@ export function fetchPreferences(): Promise<Preferences> {
 export function updatePreferences(prefs: Preferences): Promise<Preferences> {
   return api.post("/preferences", prefs).then((r) => r.data);
 }
+// === Saved Places ===
+
+/** Get saved places for a trip */
+export function fetchSavedPlaces(tripId: string): Promise<Place[]> {
+  return api.get(`/trips/${tripId}/saved-places`).then(r => r.data);
+}
+
+/** Add a place to the saved list for a trip */
+export function addSavedPlace(tripId: string, place: Place): Promise<Place> {
+  return api.post(`/trips/${tripId}/saved-places`, place).then(r => r.data);
+}
+
+/** Remove a saved place from a trip */
+export function removeSavedPlace(tripId: string, placeId: string): Promise<void> {
+  return api.delete(`/trips/${tripId}/saved-places/${placeId}`).then(() => {});
+}
+
 
 // === Auto Refresh Token on JWT Expiry ===
 api.interceptors.response.use(
@@ -295,6 +313,7 @@ api.interceptors.response.use(
         return Promise.reject(err);
       }
     }
+  
 
     return Promise.reject(error);
   }

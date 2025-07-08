@@ -29,10 +29,13 @@ import SearchBar from '../components/SearchBar';
 import PlaceCard from '../components/PlaceCard';
 import MapPane   from '../components/MapPane';
 import { usePlacesSearch } from '../services/usePlacesSearch';
-import { useSavedPlaces   } from '../services/useSavedPlaces';
+
 import type { Place } from '../types';
 import { useItinerary } from '../services/useItinerary';  
-import { useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { fetchTripDetails, setAuthToken } from '../services/api';
+
+
  // ⬅️ new
 
 /* ------------------------------------------------------------------
@@ -56,27 +59,9 @@ type FilterType = typeof FILTER_OPTIONS[number]['type'];
  * Component
  * =========================================================================*/
 export default function ExplorePlaces() {
-  const location = useLocation();
-  console.log("Location state:", location.state); 
-const tripIdFromState = location.state?.tripId;
-const tripNameFromState = location.state?.tripName;
-const tripDateFromState = location.state?.tripDate;
-
-// Save to localStorage if state is available
-useEffect(() => {
-  if (tripIdFromState) {
-    localStorage.setItem("activeTripId", tripIdFromState);
-    localStorage.setItem("activeTripName", tripNameFromState || "Your Trip");
-    localStorage.setItem("activeTripDate", tripDateFromState || "");
-  }
-}, [tripIdFromState, tripNameFromState, tripDateFromState]);
-
-// Read from localStorage fallback
-const tripName = tripNameFromState || localStorage.getItem("activeTripName") || "Your Trip";
-const tripDateRaw = tripDateFromState || localStorage.getItem("activeTripDate");
-const tripDate = tripDateRaw ? new Date(tripDateRaw).toLocaleDateString() : "Date not set";
-
-  console.log("tripDateRaw:", tripDateRaw); 
+  const { tripId } = useParams();
+const [tripName, setTripName] = useState("Your Trip");
+const [tripDate, setTripDate] = useState("Date not set");
 
 
   /* ───── UI state ───── */
@@ -100,8 +85,37 @@ const tripDate = tripDateRaw ? new Date(tripDateRaw).toLocaleDateString() : "Dat
 
   /* ───── Hooks ───── */
   const { isReady, fetchRandomPlaces, searchText, loadError } = usePlacesSearch();
-  const { saved, addPlace } = useSavedPlaces();
-  const { entries: itinerary, add: addToItinerary } = useItinerary();
+  const [saved, setSaved] = useState<Place[]>([]);
+  const saveOnlyPlace = (place: Place) => {
+  if (!saved.some(p => p.id === place.id)) {
+    setSaved(prev => [...prev, place]);
+  }
+};
+// Load saved places from localStorage when the page opens
+useEffect(() => {
+  const key = `saved-${tripId}`;
+  const stored = localStorage.getItem(key);
+  if (stored) setSaved(JSON.parse(stored));
+}, [tripId]);
+
+// Save to localStorage whenever saved[] changes
+useEffect(() => {
+  const key = `saved-${tripId}`;
+  localStorage.setItem(key, JSON.stringify(saved));
+}, [saved, tripId]);
+const togglePlace = (place: Place) => {
+  const isAlreadySaved = saved.some(p => p.id === place.id);
+  if (isAlreadySaved) {
+    setSaved(prev => prev.filter(p => p.id !== place.id));
+  } else {
+    setSaved(prev => [...prev, place]);
+  }
+};
+
+// ✅ correct
+
+  const { entries: itinerary, add: addToItinerary } = useItinerary(tripId!);
+;
 
   /* ------------------------------------------------------------------
    * Helper: (re)fetch recommended places (10 random / filtered)
@@ -141,6 +155,27 @@ const tripDate = tripDateRaw ? new Date(tripDateRaw).toLocaleDateString() : "Dat
 
   /* 1️⃣  Initial load + whenever filters change */
   useEffect(refreshRecommended, [refreshRecommended]);
+ useEffect(() => {
+  if (!tripId) return;
+
+  const loadTrip = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      setAuthToken(token);
+
+      const trip = await fetchTripDetails(tripId);
+      setTripName(trip.basicInfo.tripName);
+      setTripDate(new Date(trip.basicInfo.startDateTime).toLocaleDateString());
+    } catch (err) {
+      console.error("Failed to fetch trip details:", err);
+    }
+  };
+
+  loadTrip();
+}, [tripId]);
+
+
 
   /* 2️⃣  Text search overlay */
   useEffect(() => {
@@ -223,48 +258,50 @@ const tripDate = tripDateRaw ? new Date(tripDateRaw).toLocaleDateString() : "Dat
 
       {/* Scrollable list of PlaceCards */}
       <div className="space-y-4 pr-1">
-        {loading ? (
-          /* skeleton UI */
-          Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-24 rounded-lg bg-gray-100 animate-pulse" />
-          ))
-        ) : combined.length === 0 ? (
-          <p className="mt-4 text-center text-gray-500">No places found.</p>
-        ) : (
-          combined.map(p => (
-            <div
-              key={p.id}
-              /* hover highlight syncs with marker hover */
-              onMouseEnter={() => setHighlight(p.id)}
-              onMouseLeave={() => setHighlight(null)}
-              /* click card → zoom map + open InfoWindow */
-              onClick={() => {
-                setHighlight(p.id);
-                setFocusCoord({ lat: p.lat, lng: p.lng });
-                setMapZoom(15);
-                setInfoPlace(p);
-              }}
-            >
-              <PlaceCard
-                place={p}
-                saved={saved.some(sp => sp.id === p.id)}
-                onSave={addPlace}
-                onAdd={(id, time) => {
-                  const p = combined.find(pl => pl.id === id);
-                  if (!p) return;
-                
-                  /* try to add – alert if the slot is full */
-                  if (!addToItinerary(p, time)) {
-                    alert(`Only three places allowed at ${time}.`);
-                  }
-                }}
-                highlighted={highlightId === p.id}
-              />
-            </div>
-          ))
-        )}
-      </div>
-    </>
+  {loading ? (
+    Array.from({ length: 6 }).map((_, i) => (
+      <div key={i} className="h-24 rounded-lg bg-gray-100 animate-pulse" />
+    ))
+  ) : combined.length === 0 ? (
+    <p className="mt-4 text-center text-gray-500">No places found.</p>
+  ) : (
+    combined.map(p => {
+      const isSaved = saved.some(sp => sp.id === p.id);
+      const isInItinerary = itinerary.some(i => i.place.id === p.id);
+
+      return (
+        <div
+          key={p.id}
+          onMouseEnter={() => setHighlight(p.id)}
+          onMouseLeave={() => setHighlight(null)}
+          onClick={() => {
+            setHighlight(p.id);
+            setFocusCoord({ lat: p.lat, lng: p.lng });
+            setMapZoom(15);
+            setInfoPlace(p);
+          }}
+        >
+          <PlaceCard
+            place={p}
+            saved={isSaved}
+            onSave={saveOnlyPlace}
+            onAdd={async (id, time) => {
+              const selectedPlace = combined.find(pl => pl.id === id);
+              if (!selectedPlace) return;
+
+              const success = await addToItinerary(selectedPlace, time);
+              if (!success) {
+                alert(`Only three places allowed at ${time}.`);
+              }
+            }}
+            highlighted={highlightId === p.id}
+          />
+        </div>
+      );
+    })
+  )}
+</div>
+</>
   );
 
   /* =========================================================================
@@ -342,7 +379,15 @@ const tripDate = tripDateRaw ? new Date(tripDateRaw).toLocaleDateString() : "Dat
    * =========================================================================*/
   return (
     <>
-      <Layout activeTab="Explore Places" tripName={tripName}  tripDate={tripDate}     left={left} right={right} />
+      <Layout
+  activeTab="Explore Places"
+  tripId={tripId}
+  tripName={tripName}
+  tripDate={tripDate}
+  left={left}
+  right={right}
+/>
+
       
       {FilterModal}
     </>

@@ -1,65 +1,49 @@
-/****************************************************************************************
- * useSavedPlaces.ts
- * ------------------------------------------------------------------
- * React hook that wraps “Saved Places” persistence.
- *
- *  • saved[]          Current list of saved <Place> objects
- *  • addPlace(p)      Idempotently add a place (no duplicates)
- *  • removePlace(id)  Delete by place.id
- *
- *  Implementation details
- *  ──────────────────────
- *    • Uses localStorage as the backing store (key = 'savedPlaces')
- *    • Serialises to JSON on every mutation; hydrates on mount
- *    • No external context provider needed — simply import the hook
- *      anywhere you need access to the saved list.
- *****************************************************************************************/
-
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Place } from '../types';
 
-const LS_KEY = 'savedPlaces';               // localStorage key
-
-export function useSavedPlaces() {
-  /* ------------------------------------------------------------------
-   * 1. Reactive state for the saved list
-   * ------------------------------------------------------------------*/
+export function useSavedPlaces(tripId: string) {
   const [saved, setSaved] = useState<Place[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  /* ------------------------------------------------------------------
-   * 2. Hydrate from localStorage on first render
-   * ------------------------------------------------------------------*/
+  const STORAGE_KEY = `saved-${tripId}`;
+
+  // Load saved places from localStorage
   useEffect(() => {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) setSaved(JSON.parse(raw) as Place[]);
-  }, []);
+    const loadSaved = () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          setSaved(JSON.parse(stored));
+        }
+      } catch (err) {
+        console.error("Error loading saved places from localStorage:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  /* ------------------------------------------------------------------
-   * 3. Persist to localStorage whenever the list changes
-   * ------------------------------------------------------------------*/
+    if (tripId) {
+      loadSaved();
+    }
+  }, [tripId]);
+
+  // Save to localStorage whenever saved[] changes
   useEffect(() => {
-    localStorage.setItem(LS_KEY, JSON.stringify(saved));
-  }, [saved]);
+    if (tripId) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    }
+  }, [saved, tripId]);
 
-  /* ------------------------------------------------------------------
-   * 4a. addPlace() – ignore duplicates by place.id
-   * ------------------------------------------------------------------*/
-  const addPlace = useCallback(
-    (p: Place) =>
-      setSaved(prev => (prev.some(q => q.id === p.id) ? prev : [...prev, p])),
-    [],
-  );
+  // Add a place locally
+  const addPlace = (place: Place) => {
+    if (!place.name || saved.some(p => p.id === place.id)) return;
+    setSaved(prev => [...prev, place]);
+  };
 
-  /* ------------------------------------------------------------------
-   * 4b. removePlace() – simple filter by id
-   * ------------------------------------------------------------------*/
-  const removePlace = useCallback(
-    (id: string) => setSaved(prev => prev.filter(p => p.id !== id)),
-    [],
-  );
+  // Remove a place
+  const removePlace = (placeId: string) => {
+    setSaved(prev => prev.filter(p => p.id !== placeId));
+  };
 
-  /* ------------------------------------------------------------------
-   * 5. Public API
-   * ------------------------------------------------------------------*/
-  return { saved, addPlace, removePlace };
+  return { saved, addPlace, removePlace, loading };
 }
