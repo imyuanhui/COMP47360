@@ -108,7 +108,7 @@ export default function LandingPage() {
             <img
               src="/assets/logo.jpg"
               alt="Logo"
-              className="h-8 w-8 rounded-full"
+              className="h-8 w-8"
             />
             <span className="text-xl font-bold">SmartTrip NYC</span>
           </div>
