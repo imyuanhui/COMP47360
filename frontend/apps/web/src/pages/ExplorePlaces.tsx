@@ -24,15 +24,19 @@ import { fetchTripDetails, setAuthToken } from '../services/api';
 /* Constants */
 /* ------------------------------------------------------------------ */
 
+/** Rough midpoint of Manhattan (used as centre for Nearby/Text search). */
 const DEFAULT_CENTRE: google.maps.LatLngLiteral = { lat: 40.7422, lng: -73.9880 };
 
+/** Radius that fully covers the island of Manhattan (~21 km × 3 km). */
+const MANHATTAN_RADIUS = 5_500;            // metres
+
 const FILTER_OPTIONS = [
-  { type: 'museum',        label: 'Museums'         },
-  { type: 'park',          label: 'Parks'           },
-  { type: 'art_gallery',   label: 'Art Galleries'   },
-  { type: 'shopping_mall', label: 'Shopping Malls'  },
-  { type: 'library',       label: 'Libraries'       },
-  { type: 'night_club',    label: 'Night-life'      },
+  { type: 'museum',        label: 'Museums'        },
+  { type: 'park',          label: 'Parks'          },
+  { type: 'art_gallery',   label: 'Art Galleries'  },
+  { type: 'shopping_mall', label: 'Shopping Malls' },
+  { type: 'library',       label: 'Libraries'      },
+  { type: 'night_club',    label: 'Night-life'     },
 ] as const;
 type FilterType = typeof FILTER_OPTIONS[number]['type'];
 
@@ -100,10 +104,11 @@ export default function ExplorePlaces() {
     if (!isReady) return;
 
     setLoading(true);
+
     const fetch = filters.length
-      ? searchText('tourist attraction', DEFAULT_CENTRE, filters)
+      ? searchText('tourist attraction', DEFAULT_CENTRE, filters, MANHATTAN_RADIUS)
           .then(r => [...r].sort(() => Math.random() - 0.5).slice(0, 10))
-      : fetchRandomPlaces(DEFAULT_CENTRE);
+      : fetchRandomPlaces(DEFAULT_CENTRE, MANHATTAN_RADIUS);
 
     fetch
       .then(r => {
@@ -151,7 +156,7 @@ export default function ExplorePlaces() {
     let cancelled = false;
     setLoading(true);
 
-    searchText(q, DEFAULT_CENTRE, filters)
+    searchText(q, DEFAULT_CENTRE, filters, MANHATTAN_RADIUS)
       .then(r => {
         if (cancelled) return;
         const top = r.slice(0, 10);
@@ -275,14 +280,19 @@ export default function ExplorePlaces() {
 
         <div className="space-y-2">
           {FILTER_OPTIONS.map(opt => (
-            <label key={opt.type} className="flex items-center space-x-2 text-sm cursor-pointer">
+            <label
+              key={opt.type}
+              className="flex cursor-pointer items-center space-x-2 text-sm"
+            >
               <input
                 type="checkbox"
                 className="accent-blue-600"
                 checked={draftFilters.includes(opt.type)}
                 onChange={e =>
                   setDraftFilters(prev =>
-                    e.target.checked ? [...prev, opt.type] : prev.filter(t => t !== opt.type),
+                    e.target.checked
+                      ? [...prev, opt.type]
+                      : prev.filter(t => t !== opt.type),
                   )
                 }
               />
@@ -345,7 +355,6 @@ export default function ExplorePlaces() {
         left={left}
         right={right}
       />
-
       {FilterModal}
     </>
   );

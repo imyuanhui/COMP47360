@@ -103,7 +103,7 @@ export default function MapPane({
           onClick={toggleBusyness}
           className="bg-[#032c46] text-white rounded px-3 py-1 shadow hover:bg-[#054067] transition"
         >
-          {showZones ? 'Hide Busyness' : 'Display Busyness'}
+          {showZones ? 'Hide Business' : 'Display Business'}
         </button>
       </div>
 
@@ -155,7 +155,7 @@ export default function MapPane({
           <Circle
             key={z.id}
             center={{ lat: z.lat, lng: z.lng }}
-            radius={2000}
+            radius={1500}
             options={{
               strokeWeight: 0,
               fillOpacity: 0.25,

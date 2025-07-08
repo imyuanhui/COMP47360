@@ -78,17 +78,12 @@ export default function MyItinerary() {
                   <PlaceCard
                     place={p}
                     onAdd={() => {}}
+                    onRemove={() => remove(p.id, slot)}
                     saved
                     highlighted={highlightId === p.id}
                     hideItinerary={true}
                     timeSlot={slot}
                   />
-                  <button
-                    onClick={() => remove(p.id, slot)}
-                    className="ml-2 text-xs text-red-600 hover:underline"
-                  >
-                    remove
-                  </button>
                 </div>
               ))}
             </div>
