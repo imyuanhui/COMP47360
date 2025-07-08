@@ -43,7 +43,6 @@ export default function Layout({ activeTab, left, right, tripName, tripDate, tri
   { label: 'Explore Places',     path: tripId ? `/explore/${tripId}` : '/' },
   { label: 'My Itinerary',       path: tripId ? `/myitinerary/${tripId}` : '/itinerary' },
   { label: 'Saved Places', path: tripId ? `/saved/${tripId}` : '/' },
-  { label: 'Update Preferences', path: '/preferences' },
 ];
 
 
@@ -62,8 +61,7 @@ export default function Layout({ activeTab, left, right, tripName, tripDate, tri
 
           {/* quick links (no routing library needed) */}
           <div className="space-x-4 text-sm text-gray-600">
-            <button onClick={() => navigate('/profile')}   className="hover:underline">Profile</button>
-            <button onClick={() => navigate('/settings')}  className="hover:underline">Settings</button>
+            <button onClick={() => navigate('/dashboard')}   className="hover:underline">Dashboard</button>
             <button onClick={() => navigate('/')}          className="hover:underline">Logout</button>
           </div>
         </header>
@@ -91,7 +89,7 @@ export default function Layout({ activeTab, left, right, tripName, tripDate, tri
         </div>
 
         {/* 3️⃣  Tab navigation */}
-        <nav className="border-b border-gray-200">
+        <nav>
           <ul className="flex space-x-8 px-6 text-base">
             {tabs.map(t => (
               <li key={t.label}>
@@ -111,30 +109,27 @@ export default function Layout({ activeTab, left, right, tripName, tripDate, tri
           </ul>
         </nav>
 
-        {/* 4️⃣  Scrollable main content (search, list, etc.) */}
-        <div
-          className="flex-1 overflow-y-auto px-6 py-4"
-          style={{
-            scrollbarWidth: 'none',          // Firefox
-            msOverflowStyle: 'none',         // IE/Edge
-          }}
+        {/* 4️⃣  Scrollable wrapper CONTAINS the footer */}
+      <div
+          className="flex-1 overflow-y-auto flex flex-col"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          <style>{`
-            div::-webkit-scrollbar {
-              display: none;                 // Chrome, Safari
-            }
-          `}</style>
-          {left}
-        </div>
+          <style>{`div::-webkit-scrollbar{display:none}`}</style>
 
-        {/* 5️⃣  Footer */}
-        <footer className="px-6 py-4 text-center text-sm text-gray-400">
-          Sign Up &nbsp;|&nbsp; Contact Us &nbsp;|&nbsp; FAQs
-        </footer>
+          {/* main page content */}
+          <div className="px-6 py-4 flex-1">
+            {left}
+          </div>
+
+          {/* 5️⃣  Footer lives at the very bottom of this scroll area */}
+          <footer className="mt-auto px-6 py-4 text-center text-sm text-gray-400">
+            Sign Up &nbsp;|&nbsp; Contact&nbsp;Us &nbsp;|&nbsp; FAQs
+          </footer>
+          </div>
       </div>
 
       {/* ──────────────────────── RIGHT PANE ───────────────────────── */}
-      <div className="h-full w-1/2">
+      <div className="w-1/2 h-screen overflow-hidden">
         {right}
       </div>
     </div>

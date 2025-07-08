@@ -14,7 +14,7 @@ import { fetchTripDetails, setAuthToken } from '../services/api';
 import type { Place } from '../types';
 
 /* default map centre: Manhattan */
-const DEFAULT_CENTRE: google.maps.LatLngLiteral = { lat: 40.7831, lng: -73.9712 };
+const DEFAULT_CENTRE: google.maps.LatLngLiteral = { lat: 40.7422, lng: -73.9880 };
 
 export default function SavedPlaces() {
   const { tripId } = useParams();
@@ -69,17 +69,12 @@ const { saved, addPlace, removePlace, loading } = useSavedPlaces(tripId!);
             <PlaceCard
               place={p}
               saved
+              onSave={() => removePlace(p.id)}
               onAdd={() => {}}
               highlighted={highlightId === p.id}
               hideItinerary={true}
               showRating={false}
             />
-            <button
-              onClick={() => removePlace(p.id)}
-              className="ml-2 text-xs text-red-600 hover:underline"
-            >
-              remove
-            </button>
           </div>
         ))
       )}

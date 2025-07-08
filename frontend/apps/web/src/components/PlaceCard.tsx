@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Place } from '../types';
-import axios from 'axios'; // Make sure axios is installed
+import axios from 'axios';                     // Make sure axios is installed
 
 interface Props {
   place: Place;
@@ -10,7 +10,7 @@ interface Props {
   highlighted: boolean;
   hideItinerary?: boolean;
   showRating?: boolean;
-  timeSlot?: string;  // Optional time for busyness prediction
+  timeSlot?: string;                           // Optional time for busyness prediction
 }
 
 const TIMES = Array.from({ length: 10 }, (_, i) => `${(9 + i).toString().padStart(2, '0')}:00`);
@@ -28,7 +28,7 @@ export default function PlaceCard({
   const [openMenu, setOpenMenu] = useState(false);
   const [busynessLevel, setBusynessLevel] = useState<string | null>(null);
 
-  /* ------- Esc‑key closes dropdown ------- */
+  /* ------- Esc-key closes dropdown ------- */
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpenMenu(false);
@@ -37,7 +37,7 @@ export default function PlaceCard({
     return () => window.removeEventListener('keydown', handleKey);
   }, [openMenu]);
 
-  // Fetch busyness from API based on lat, lng and optional timeSlot
+  /* ------- Fetch busyness level from API ------- */
   useEffect(() => {
     if (!place.lat || !place.lng) {
       setBusynessLevel(null);
@@ -48,21 +48,15 @@ export default function PlaceCard({
       try {
         let url = `/api/busyness?lat=${place.lat}&lon=${place.lng}`;
         if (timeSlot) {
-          // If you have a date string, combine it here. For now, assume today:
           const todayDate = new Date().toISOString().slice(0, 10);
-          const timestamp = `${todayDate}T${timeSlot}:00`;
-          url += `&timestamp=${timestamp}`;
+          url += `&timestamp=${todayDate}T${timeSlot}:00`;
         }
-        const response = await axios.get(url);
-        const data = response.data;
-
-        if (Array.isArray(data)) {
-          setBusynessLevel(data[0]?.busynessLevel ?? 'unknown');
-        } else {
-          setBusynessLevel(data.busynessLevel ?? 'unknown');
-        }
-      } catch (error) {
-        console.error('Failed to fetch busyness:', error);
+        const { data } = await axios.get(url);
+        setBusynessLevel(
+          Array.isArray(data) ? data[0]?.busynessLevel ?? 'unknown' : data.busynessLevel ?? 'unknown',
+        );
+      } catch (err) {
+        console.error('Failed to fetch busyness:', err);
         setBusynessLevel('unknown');
       }
     };
@@ -71,7 +65,7 @@ export default function PlaceCard({
   }, [place.lat, place.lng, timeSlot]);
 
   /* --- class helpers ------------------------------------------------ */
-  const baseBtn = 'w-28 px-2 py-1 text-xs rounded whitespace-nowrap transition-colors';
+  const baseBtn  = 'w-28 px-2 py-1 text-xs rounded whitespace-nowrap transition-colors';
   const ghostBtn = `${baseBtn} bg-gray-100 hover:bg-gray-200`;
 
   return (
@@ -109,28 +103,27 @@ export default function PlaceCard({
             </p>
           )}
 
+          {/* ───── Action buttons (Save / Itinerary) ───── */}
           <div className="absolute right-0 top-0 flex flex-col items-end space-y-1">
             {onSave && (
               <button
-                disabled={saved}
                 onClick={(e) => {
-  e.stopPropagation(); // prevent parent click
-  onSave(place);
-}}
-
+                  e.stopPropagation();        // keep card click intact
+                  onSave(place);
+                }}
                 className={
                   saved
-                    ? `${baseBtn} bg-green-100 text-green-700 cursor-default`
+                    ? `${baseBtn} bg-red-100 text-red-700 hover:bg-red-200`
                     : `${baseBtn} bg-[#022c44] text-white hover:bg-[#022c44]/90`
                 }
               >
-                {saved ? '✓ Saved' : '+ Saved Places'}
+                {saved ? '- Saved Places' : '+ Saved Places'}
               </button>
             )}
 
             {!hideItinerary && (
               <div className="relative">
-                <button onClick={() => setOpenMenu(prev => !prev)} className={ghostBtn}>
+                <button onClick={() => setOpenMenu(!openMenu)} className={ghostBtn}>
                   + My Itinerary
                 </button>
 
@@ -150,11 +143,10 @@ export default function PlaceCard({
                       <button
                         key={t}
                         onClick={(e) => {
-  e.stopPropagation(); // prevent parent click
-  onAdd(place.id, t);
-  setOpenMenu(false);
-}}
-
+                          e.stopPropagation();
+                          onAdd(place.id, t);
+                          setOpenMenu(false);
+                        }}
                         className="w-full rounded px-2 py-1 text-left text-sm hover:bg-gray-100"
                       >
                         {t} &nbsp; + Add to timeslot
