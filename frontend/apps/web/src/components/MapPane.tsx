@@ -1,15 +1,10 @@
 /**********************************************************************
  * MapPane.tsx
  * --------------------------------------------------------------------
- * Re-usable Google-Map wrapper.
- *
- *  • Receives a list of <Place> objects and renders a marker for each.
- *  • `focusCoord`   – camera pans here whenever the prop changes
- *  • `zoom`         – fully controlled zoom level from parent
- *  • `infoPlace`    – if non-null, shows a single InfoWindow
- *  • `onMarkerClick` passes the clicked <Place> back to the parent
- *  • Tailwind-free: styling is handled by Google Maps options + the
- *    parent container’s size.
+ * Google-Map wrapper with markers, optional busyness circles,
+ * and an InfoWindow.  Clicking the “Display Busyness” toggle will
+ * always (a) centre on `defaultCenter` and (b) restore the *initial*
+ * zoom level that was present on first load.
  *********************************************************************/
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -23,17 +18,17 @@ import {
 import type { Place } from '../types';
 import { useZoneBusyness } from '../services/useZoneBusyness';
 
-/* ---------- public props ---------- */
+/* ---------- incoming props ---------- */
 interface Props {
-  places: Place[];                               // markers
-  focusCoord: google.maps.LatLngLiteral | null;  // camera centre
-  zoom: number;                                  // controlled zoom
-  infoPlace: Place | null;                       // place to pop-up
-  onInfoClose: () => void;                       // user closed bubble
-  onMarkerClick: (p: Place) => void;             // bubble open / list sync
+  places: Place[];
+  focusCoord: google.maps.LatLngLiteral | null;
+  zoom: number;                                 // controlled by parent
+  infoPlace: Place | null;
+  onInfoClose: () => void;
+  onMarkerClick: (p: Place) => void;
 }
 
-/* ---------- static map styling ---------- */
+/* ---------- static styling & constants ---------- */
 const mapStyles: google.maps.MapTypeStyle[] = [
   { featureType: 'road',      elementType: 'labels',    stylers: [{ visibility: 'on' }] },
   { featureType: 'water',     elementType: 'geometry',  stylers: [{ color: '#a2daf2' }] },
@@ -44,8 +39,8 @@ const mapStyles: google.maps.MapTypeStyle[] = [
 ];
 
 const containerStyle = { width: '100%', height: '100%' } as const;
-const defaultCenter: google.maps.LatLngLiteral = { lat: 40.7831, lng: -73.9712 };
-const LIBRARIES = ['places'] as const;           // keep ref stable to silence warning
+const defaultCenter: google.maps.LatLngLiteral = { lat: 40.7422, lng: -73.9880 };
+const LIBRARIES = ['places'] as const;   // keep ref stable to silence warning
 
 export default function MapPane({
   places,
@@ -55,19 +50,23 @@ export default function MapPane({
   onInfoClose,
   onMarkerClick,
 }: Props) {
-  /* 1️⃣  Load Google Maps JS SDK (API key in .env) */
+  /* 1️⃣  Load Google Maps JS SDK */
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries: [...LIBRARIES],
   });
 
-  const mapRef = useRef<google.maps.Map | null>(null);
+  /* ─── refs & local state ─── */
+  const mapRef           = useRef<google.maps.Map | null>(null);
+  const initialZoomRef   = useRef<number | null>(null);       // ⭐ remembers first zoom
   const [showZones, setShowZones] = useState(false);
   const zones = useZoneBusyness(showZones);
 
+  /* ─── derived camera centre ─── */
   const centre: google.maps.LatLngLiteral =
     focusCoord ?? (places[0] ? { lat: places[0].lat, lng: places[0].lng } : defaultCenter);
 
+  /* ─── sync map camera with props ─── */
   useEffect(() => {
     if (mapRef.current) mapRef.current.panTo(centre);
   }, [centre]);
@@ -76,18 +75,35 @@ export default function MapPane({
     if (mapRef.current) mapRef.current.setZoom(zoom);
   }, [zoom]);
 
-  if (loadError) return <div>Error loading maps</div>;
-  if (!isLoaded)  return <div>Loading Maps…</div>;
+  /* ─── handle busyness toggle ─── */
+  const toggleBusyness = () => {
+    setShowZones(prev => !prev);
 
+    if (mapRef.current) {
+      // a) jump back to the canonical centre
+      mapRef.current.panTo(defaultCenter);
+
+      // b) restore FIRST-LOAD zoom level
+      if (initialZoomRef.current !== null) {
+        mapRef.current.setZoom(initialZoomRef.current);
+      }
+    }
+  };
+
+  /* ─── fallbacks ─── */
+  if (loadError) return <div>Error loading maps</div>;
+  if (!isLoaded)   return <div>Loading Maps…</div>;
+
+  /* ─── render ─── */
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       {/* Floating busyness toggle */}
       <div style={{ position: 'absolute', top: 16, left: 16, zIndex: 10 }}>
         <button
-          onClick={() => setShowZones(prev => !prev)}
+          onClick={toggleBusyness}
           className="bg-[#032c46] text-white rounded px-3 py-1 shadow hover:bg-[#054067] transition"
         >
-          {showZones ? 'Hide Busyness' : 'Display Busyness'}
+          {showZones ? 'Hide Business' : 'Display Business'}
         </button>
       </div>
 
@@ -95,7 +111,14 @@ export default function MapPane({
         mapContainerStyle={containerStyle}
         center={centre}
         zoom={zoom}
-        onLoad={map => { mapRef.current = map; }}
+        onLoad={map => {
+          mapRef.current = map;
+
+          /* Store the initial zoom exactly once */
+          if (initialZoomRef.current === null) {
+            initialZoomRef.current = map.getZoom() ?? zoom;
+          }
+        }}
         options={{
           styles:            mapStyles,
           clickableIcons:    false,
@@ -127,17 +150,17 @@ export default function MapPane({
           </InfoWindow>
         )}
 
-        {/* zone circles */}
+        {/* coloured busyness circles */}
         {zones.map(z => (
           <Circle
             key={z.id}
             center={{ lat: z.lat, lng: z.lng }}
-            radius={2000}
+            radius={1500}
             options={{
               strokeWeight: 0,
               fillOpacity: 0.25,
               fillColor:
-                z.rating === 'high' ? '#d9534f' :
+                z.rating === 'high'   ? '#d9534f' :
                 z.rating === 'medium' ? '#f0ad4e' : '#5cb85c',
             }}
           />

@@ -37,6 +37,74 @@ export default function Dashboard() {
   const [loggingOut, setLoggingOut] = useState(false);
   const navigate = useNavigate();
 
+
+const allVideoIds = [
+  "7438833662516383006", "7452843363255979286", "7283792903828802859",
+  "7386346933046021406", "7366414147325791534", "7523011556087483678"
+];
+
+const [shuffledVideos, setShuffledVideos] = useState<string[]>([]);
+const [showSmartModal, setShowSmartModal] = useState(false);
+const [smartInput, setSmartInput] = useState("");
+
+const handleSmartSubmit = async () => {
+  if (!smartInput.trim()) {
+    toast.error("Please describe your trip idea.");
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Not authenticated");
+      return;
+    }
+
+    const response = await fetch("/api/smart-itinerary", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "text/plain",
+      },
+      body: smartInput,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to generate smart itinerary");
+    }
+
+    toast.success("Smart itinerary created!");
+    setShowSmartModal(false);
+
+    navigate(`/myitinerary/${data.tripId}`, {
+      state: {
+        tripName: data.tripName,
+        tripStartDate: data.startDateTime.split("T")[0],
+        tripId: data.tripId,
+      },
+    });
+  } catch (err: any) {
+    toast.error(err.message || "Failed to generate itinerary");
+  }
+};
+
+
+useEffect(() => {
+  // Initial shuffle
+  shuffleVideos();
+}, []);
+
+const shuffleVideos = () => {
+  const shuffled = [...allVideoIds].sort(() => 0.5 - Math.random()).slice(0, 4);
+  setShuffledVideos(shuffled);
+};
+
+
+
+
+
   const [trending] = useState([
     { id: "1", title: "Central Park Highlights", image: "centralpark.jpeg" },
     { id: "2", title: "Top 5 Cheap Burgers", image: "thumb.png" },
@@ -206,14 +274,17 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans container mx-auto px-4 md:px-0">
+   <div className="min-h-screen overflow-y-auto hide-scrollbar bg-white text-gray-900 font-sans container mx-auto px-4 md:px-0">
+
+
 
       <Toaster position="top-center" />
 
       {/* Profile Section */}
 
 {showProfile && (
-  <div className="fixed top-0 right-0 w-full max-w-sm h-full bg-gradient-to-b from-blue-50 to-white shadow-2xl z-50 overflow-auto animate-slideIn">
+ <div className="fixed top-0 right-0 w-full max-w-sm h-full bg-gradient-to-b from-blue-50 to-white shadow-2xl z-50 overflow-hidden animate-slideIn">
+
     <div className="p-6 space-y-4">
       <div className="flex items-center gap-4 mb-2">
         <div className="w-14 h-14 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-xl font-bold">
@@ -332,6 +403,31 @@ export default function Dashboard() {
         
         </button>
       </div>
+      {showSmartModal && (
+  <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+    <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+      <h2 className="text-lg font-semibold mb-3">Smart Itinerary Generator</h2>
+      <input
+        value={smartInput}
+        onChange={(e) => setSmartInput(e.target.value)}
+        placeholder="e.g., Chill day in Times Square"
+        className="w-full border px-3 py-2 rounded mb-4"
+      />
+      <div className="flex justify-end gap-2">
+        <button onClick={() => setShowSmartModal(false)} className="text-gray-500">
+          Cancel
+        </button>
+        <button
+          onClick={handleSmartSubmit}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Generate
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
@@ -422,80 +518,92 @@ export default function Dashboard() {
   )}
 </div>
 
-          <p className="text-xs text-gray-400 italic mt-1">No destinations added yet.</p>
-          <div className="flex justify-end pt-2">
-           <button
-  onClick={(e) => {
-    e.stopPropagation();
-    setConfirmDeleteId(trip.tripId);
-  }}
-  className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
->
-  <span className="text-base leading-none"></span>
-  Delete
-</button>
+          
+          <div className="pt-1">
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      setConfirmDeleteId(trip.tripId);
+    }}
+    className="text-xs text-red-500 hover:text-red-700"
+  >
+    Delete
+  </button>
+</div>
 
-          </div>
         </div>
       </div>
     );
   })}
 
-  {/* Plan a New Trip card */}
-  <div
-  className="bg-white border-2 border-gray-300 rounded-xl flex items-center justify-center h-48 w-full hover:shadow-md transition cursor-pointer"
-  onClick={() => setShowModal(true)}
->
+ 
 
-    <button className="bg-[#03253D] text-white px-10 py-2 rounded-full text-sm font-medium shadow hover:scale-105 transition whitespace-nowrap">
-      + Plan a new trip
+{/* ➕ Buttons at the bottom of the trip grid */}
+{/* Trip Card for + Plan a New Trip */}
+<div
+  className="cursor-pointer bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 transition-transform transform hover:scale-105 hover:shadow-xl duration-300 flex flex-col items-center justify-center gap-3 py-6"
+  onClick={() => setShowModal(true)} // default action for full card
+>
+  <button
+    onClick={(e) => {
+      e.stopPropagation(); // prevent card click
+      setShowModal(true);
+    }}
+    className="bg-[#03253D] text-white px-6 py-2 rounded-full text-sm font-semibold shadow hover:bg-[#021a2a] transition"
+  >
+    + Plan a New Trip
+  </button>
+  <button
+    onClick={(e) => {
+      e.stopPropagation(); // prevent card click
+      setShowSmartModal(true);
+    }}
+    className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow hover:opacity-90 transition"
+  >
+    ✨ Create Smart Itinerary
+  </button>
+</div>
+</div>
+
+{/* 🔥 TikTok Tourist Picks */}
+<div className="mt-12">
+  <div className="flex justify-between items-center mb-4">
+    <h2 className="text-xl font-bold text-[#03253D]">📍 Must-See Manhattan Moments</h2>
+    <button
+      onClick={shuffleVideos}
+      className="bg-[#03253D] text-white px-6 py-2 rounded shadow hover:bg-[#021a2a] transition"
+    >
+      Refresh Videos
     </button>
   </div>
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    {shuffledVideos.map((id, index) => (
+      <div
+        key={index}
+        className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition"
+      >
+        <div className="overflow-hidden rounded-xl">
+  <iframe
+    src={`https://www.tiktok.com/embed/${id}`}
+    allow="autoplay; encrypted-media"
+    allowFullScreen
+    title={`TikTok Video ${index + 1}`}
+    className="w-full h-[500px] border-0"
+    scrolling="no"
+  />
 </div>
 
-
-
-
-{/* 🔵 Trending Places - Now at Bottom */}
-<h2 className="text-lg font-bold mb-4">Trending Places</h2>
-
-<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
-
-  {trending.map((t, i) => (
-    i === 1 ? (
-      <div
-        key={t.id}
-        className="col-span-1 row-span-2 bg-white shadow-lg rounded-lg overflow-hidden relative group"
-      >
-        <img src={`/assets/${t.image}`} className="h-96 w-full object-cover" />
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-          <img src="/assets/tiktok.png" className="w-6 h-6 mb-2" />
-          <p className="text-xl font-bold text-center px-2 drop-shadow">{t.title}</p>
+        <div className="p-3 text-sm text-center text-gray-700">
+          Featured Spot #{index + 1}
         </div>
       </div>
-    ) : (
-      <div
-        key={t.id}
-        className="bg-white shadow rounded-lg p-3 hover:shadow-xl transition"
-      >
-        <img
-          src={`/assets/${t.image}`}
-          className="h-40 w-full object-cover rounded"
-        />
-        <p className="mt-2 font-semibold text-center">{t.title}</p>
-      </div>
-    )
-  ))}
-
-  {/* 🔺 Additional Card for Empty Space */}
-  <div className="bg-white shadow rounded-lg p-3 hover:shadow-xl transition">
-    <img
-      src="/assets/extra.jpg"
-      className="h-40 w-full object-cover rounded"
-    />
-    <p className="mt-2 font-semibold text-center">Harlem Food Crawl</p>
+    ))}
   </div>
 </div>
+
+
+
 
 
       {/* Confirm Delete Dialog */}
