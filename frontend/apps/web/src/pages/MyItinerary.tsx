@@ -1,17 +1,12 @@
-/***********************************************************************
- * MyItinerary.tsx
- * --------------------------------------------------------------------
- * Chronological list of the user’s itinerary with map synchronisation.
- ***********************************************************************/
-
-import React, { useState } from 'react';
-import Layout     from '../components/Layout';
-import PlaceCard  from '../components/PlaceCard';
-import MapPane    from '../components/MapPane';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import Layout from '../components/Layout';
+import PlaceCard from '../components/PlaceCard';
+import MapPane from '../components/MapPane';
 import { useItinerary } from '../services/useItinerary';
+import { fetchTripDetails, setAuthToken } from '../services/api';
 import type { Place } from '../types';
 
-/* ordered list of slots so ‘localeCompare’ isn’t needed later */
 const SLOTS = Array.from({ length: 10 }, (_, i) =>
   `${(9 + i).toString().padStart(2, '0')}:00`,
 );
@@ -19,23 +14,45 @@ const SLOTS = Array.from({ length: 10 }, (_, i) =>
 const DEFAULT_CENTRE: google.maps.LatLngLiteral = { lat: 40.7831, lng: -73.9712 };
 
 export default function MyItinerary() {
-  /* itinerary state */
-  const { entries, remove } = useItinerary();
+  const { tripId } = useParams();
 
-  /* map + highlight (same pattern as other pages) */
+  const [tripName, setTripName] = useState('Your Trip');
+  const [tripDate, setTripDate] = useState('Date not set');
+
+  useEffect(() => {
+    if (!tripId) return;
+
+    const loadTrip = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        setAuthToken(token);
+
+        const trip = await fetchTripDetails(tripId);
+        setTripName(trip.basicInfo.tripName);
+        setTripDate(new Date(trip.basicInfo.startDateTime).toLocaleDateString());
+      } catch (err) {
+        console.error('Failed to fetch trip in MyItinerary:', err);
+      }
+    };
+
+    loadTrip();
+  }, [tripId]);
+
+  if (!tripId) return <div>Error: No trip selected.</div>;
+
+  const { entries, remove } = useItinerary(tripId);
+  
+
   const [focusCoord, setFocusCoord] = useState<google.maps.LatLngLiteral | null>(null);
-  const [mapZoom,    setMapZoom]    = useState(13);
-  const [highlightId,setHighlight]  = useState<string | null>(null);
-  const [infoPlace,  setInfoPlace]  = useState<Place | null>(null);
+  const [mapZoom, setMapZoom] = useState(13);
+  const [highlightId, setHighlight] = useState<string | null>(null);
+  const [infoPlace, setInfoPlace] = useState<Place | null>(null);
 
-  /* ---------------- LEFT PANE ---------------- */
   const left = (
     <div className="space-y-6 pr-1">
       {SLOTS.map(slot => {
-        const places = entries
-          .filter(e => e.time === slot)
-          .map(e => e.place);
-
+        const places = entries.filter(e => e.time === slot).map(e => e.place);
         if (places.length === 0) return null;
 
         return (
@@ -64,10 +81,8 @@ export default function MyItinerary() {
                     saved
                     highlighted={highlightId === p.id}
                     hideItinerary={true}
-                    timeSlot={slot}          // ⬅️ supplies the hour ⇒ correct text
+                    timeSlot={slot}
                   />
-
-                  {/* tiny remove link */}
                   <button
                     onClick={() => remove(p.id, slot)}
                     className="ml-2 text-xs text-red-600 hover:underline"
@@ -88,7 +103,6 @@ export default function MyItinerary() {
     </div>
   );
 
-  /* ---------------- RIGHT PANE ---------------- */
   const right = (
     <MapPane
       places={entries.map(e => e.place)}
@@ -105,5 +119,14 @@ export default function MyItinerary() {
     />
   );
 
-  return <Layout activeTab="My Itinerary" left={left} right={right} />;
+  return (
+    <Layout
+      activeTab="My Itinerary"
+      tripId={tripId}
+      tripName={tripName}
+      tripDate={tripDate}
+      left={left}
+      right={right}
+    />
+  );
 }

@@ -1,20 +1,22 @@
-// src/components/Header.tsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const tabs = [
-  { name: 'Explore Places', path: '/explore' },
-  { name: 'My Itinerary',   path: '/itinerary' },
-  { name: 'Saved Places',   path: '/saved' },
+interface HeaderProps {
+  activeTab: string;
+  tripId?: string; // ✅ new
+}
+
+export default function Header({ activeTab, tripId }: HeaderProps) {
+  const loc = useLocation();
+
+  const tabs = [
+  { name: 'Explore Places', path: tripId ? `/explore/${tripId}` : '/' },
+  { name: 'My Itinerary',   path: tripId ? `/myitinerary/${tripId}` : '/itinerary' },
+  { name: 'Saved Places',   path: tripId ? `/saved/${tripId}` : '/' },
   { name: 'Update Preferences', path: '/preferences' },
 ];
 
-interface HeaderProps {
-  activeTab: string;
-}
 
-export default function Header({ activeTab }: HeaderProps) {
-  const loc = useLocation();
   return (
     <header className="flex items-center justify-between p-4 bg-white shadow">
       <div className="flex items-center space-x-8">
