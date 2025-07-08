@@ -21,6 +21,10 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
         working-directory: frontend/apps/web
+      
+      - name: Inject Google Maps API key
+        run: echo "VITE_GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_KEY }}" > .env
+        working-directory: frontend/apps/web
 
       - name: Build frontend
         run: npm run build
