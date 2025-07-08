@@ -470,7 +470,7 @@ const shuffleVideos = () => {
         </div>
       )}
 
-   <h2 className="text-lg font-bold mb-4">My Trips</h2>
+   <h2 className="text-xl font-bold mb-4">My Trips</h2>
 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-12">
 
   {myTrips.map((trip) => {
@@ -496,7 +496,11 @@ const shuffleVideos = () => {
 
 
 
-        className="cursor-pointer bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 transition-transform transform hover:scale-105 hover:shadow-xl duration-300 relative"
+        className="cursor-pointer bg-white shadow-md rounded-2xl overflow-hidden
+             border border-gray-200 transition-transform transform hover:scale-105
+             hover:shadow-xl duration-300 relative
+             h-44       
+             flex flex-col justify-between"   /* keeps delete button at bottom */
         style={{
           backgroundImage: "url('/assets/pattern.svg')",
           backgroundRepeat: "no-repeat",
@@ -541,24 +545,33 @@ const shuffleVideos = () => {
 {/* ➕ Buttons at the bottom of the trip grid */}
 {/* Trip Card for + Plan a New Trip */}
 <div
-  className="cursor-pointer bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 transition-transform transform hover:scale-105 hover:shadow-xl duration-300 flex flex-col items-center justify-center gap-3 py-6"
-  onClick={() => setShowModal(true)} // default action for full card
+  className="cursor-pointer bg-white shadow-md rounded-2xl overflow-hidden
+             border border-gray-200 transition-transform transform hover:scale-105
+             hover:shadow-xl duration-300 flex flex-col items-center justify-center
+             gap-3 py-6 h-44"
+  onClick={() => setShowModal(true)}
 >
+  {/* PLAN button – add w-full (or any specific width you prefer) */}
   <button
     onClick={(e) => {
-      e.stopPropagation(); // prevent card click
+      e.stopPropagation();
       setShowModal(true);
     }}
-    className="bg-[#03253D] text-white px-6 py-2 rounded-full text-sm font-semibold shadow hover:bg-[#021a2a] transition"
+    className="w-56 bg-[#03253D] text-white px-6 py-2 rounded-full
+               text-sm font-semibold shadow hover:bg-[#021a2a] transition"
   >
     + Plan a New Trip
   </button>
+
+  {/* SMART button – give it the same width for consistency */}
   <button
     onClick={(e) => {
-      e.stopPropagation(); // prevent card click
+      e.stopPropagation();
       setShowSmartModal(true);
     }}
-    className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow hover:opacity-90 transition"
+    className="w-56 bg-gradient-to-r from-purple-500 to-blue-500 text-white
+               px-6 py-2 rounded-full text-sm font-semibold shadow
+               hover:opacity-90 transition"
   >
     ✨ Create Smart Itinerary
   </button>
@@ -568,31 +581,32 @@ const shuffleVideos = () => {
 {/* 🔥 TikTok Tourist Picks */}
 <div className="mt-12">
   <div className="flex justify-between items-center mb-4">
-    <h2 className="text-xl font-bold text-[#03253D]">📍 Must-See Manhattan Moments</h2>
+    <h2 className="text-xl font-bold text-[#03253D]">Trending Places in NYC</h2>
     <button
       onClick={shuffleVideos}
-      className="bg-[#03253D] text-white px-6 py-2 rounded shadow hover:bg-[#021a2a] transition"
+      className="bg-[#03253D] text-white px-6 py-2 rounded-full shadow hover:bg-[#021a2a] transition"
     >
       Refresh Videos
     </button>
   </div>
 
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    {shuffledVideos.map((id, index) => (
-      <div
+        {shuffledVideos.map((id, index) => (
+        <div
         key={index}
-        className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition"
-      >
-        <div className="overflow-hidden rounded-xl">
-  <iframe
-    src={`https://www.tiktok.com/embed/${id}`}
-    allow="autoplay; encrypted-media"
-    allowFullScreen
-    title={`TikTok Video ${index + 1}`}
-    className="w-full h-[500px] border-0"
-    scrolling="no"
-  />
-</div>
+        className="mb-6 bg-white rounded-xl shadow-lg overflow-hidden 
+        hover:shadow-2xl transition">
+        {/* responsive TikTok video */}
+        <div className="overflow-hidden aspect-[9/16]">
+          <iframe
+            src={`https://www.tiktok.com/embed/v2/${id}`}  // ← /v2 is fluid-width
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+            title={`TikTok Video ${index + 1}`}
+            className="w-full h-full border-0"
+            scrolling="no"
+          />
+        </div>
 
         <div className="p-3 text-sm text-center text-gray-700">
           Featured Spot #{index + 1}
@@ -632,3 +646,5 @@ const shuffleVideos = () => {
     </div>
   );
 }
+
+
