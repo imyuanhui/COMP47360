@@ -6,11 +6,17 @@ interface Props {
   place: Place;
   onAdd: (id: string, time: string) => void;
   onSave?: (place: Place) => void;
+  /**
+   * If provided, the card will show a "– My Itinerary" button that calls
+   * this handler instead of the usual "+ My Itinerary" dropdown.
+   */
+  onRemove?: (id: string, time?: string) => void;
   saved?: boolean;
   highlighted: boolean;
   hideItinerary?: boolean;
   showRating?: boolean;
-  timeSlot?: string;                           // Optional time for busyness prediction
+  /** Optional time for busyness prediction (and to pass back on remove) */
+  timeSlot?: string;
 }
 
 const TIMES = Array.from({ length: 10 }, (_, i) => `${(9 + i).toString().padStart(2, '0')}:00`);
@@ -19,6 +25,7 @@ export default function PlaceCard({
   place,
   onAdd,
   onSave,
+  onRemove,
   saved = false,
   highlighted,
   hideItinerary = false,
@@ -28,7 +35,7 @@ export default function PlaceCard({
   const [openMenu, setOpenMenu] = useState(false);
   const [busynessLevel, setBusynessLevel] = useState<string | null>(null);
 
-  /* ------- Esc-key closes dropdown ------- */
+  /* ------- Esc‑key closes dropdown ------- */
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpenMenu(false);
@@ -56,7 +63,7 @@ export default function PlaceCard({
           Array.isArray(data) ? data[0]?.busynessLevel ?? 'unknown' : data.busynessLevel ?? 'unknown',
         );
       } catch (err) {
-        console.error('Failed to fetch busyness:', err);
+        console.error('Failed to fetch business:', err);
         setBusynessLevel('unknown');
       }
     };
@@ -98,8 +105,8 @@ export default function PlaceCard({
           {showRating && (
             <p className="text-xs text-gray-600">
               {busynessLevel
-                ? `Busyness rating${timeSlot ? ` at ${timeSlot}` : ''}: ${busynessLevel}`
-                : 'Loading busyness...'}
+                ? `Business rating${timeSlot ? ` at ${timeSlot}` : ''}: ${busynessLevel}`
+                : 'Loading business...'}
             </p>
           )}
 
@@ -121,40 +128,52 @@ export default function PlaceCard({
               </button>
             )}
 
-            {!hideItinerary && (
-              <div className="relative">
-                <button onClick={() => setOpenMenu(!openMenu)} className={ghostBtn}>
-                  + My Itinerary
-                </button>
+            {onRemove ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(place.id, timeSlot);
+                }}
+                className={`${baseBtn} bg-red-100 text-red-700 hover:bg-red-200`}
+              >
+                - My&nbsp;Itinerary
+              </button>
+            ) : (
+              !hideItinerary && (
+                <div className="relative">
+                  <button onClick={() => setOpenMenu(!openMenu)} className={ghostBtn}>
+                    + My Itinerary
+                  </button>
 
-                {openMenu && (
-                  <div className="absolute right-0 top-7 z-10 w-44 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
-                    <div className="mb-2 flex items-center justify-between">
-                      <p className="text-sm font-semibold leading-none">Add to your Trip</p>
-                      <button
-                        onClick={() => setOpenMenu(false)}
-                        className="text-sm text-gray-400 hover:text-gray-600"
-                        aria-label="Close"
-                      >
-                        x
-                      </button>
+                  {openMenu && (
+                    <div className="absolute right-0 top-7 z-10 w-44 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-sm font-semibold leading-none">Add to your Trip</p>
+                        <button
+                          onClick={() => setOpenMenu(false)}
+                          className="text-sm text-gray-400 hover:text-gray-600"
+                          aria-label="Close"
+                        >
+                          x
+                        </button>
+                      </div>
+                      {TIMES.map(t => (
+                        <button
+                          key={t}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAdd(place.id, t);
+                            setOpenMenu(false);
+                          }}
+                          className="w-full rounded px-2 py-1 text-left text-sm hover:bg-gray-100"
+                        >
+                          {t} &nbsp; + Add to timeslot
+                        </button>
+                      ))}
                     </div>
-                    {TIMES.map(t => (
-                      <button
-                        key={t}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAdd(place.id, t);
-                          setOpenMenu(false);
-                        }}
-                        className="w-full rounded px-2 py-1 text-left text-sm hover:bg-gray-100"
-                      >
-                        {t} &nbsp; + Add to timeslot
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )
             )}
           </div>
         </div>

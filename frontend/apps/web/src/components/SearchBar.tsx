@@ -1,7 +1,7 @@
 /***********************************************************************
  * SearchBar.tsx
  * ---------------------------------------------------------------------
- * Pure Google-Places Autocomplete input.  
+ * Pure Google-Places Autocomplete input.
  * (All filtering logic now lives in ExplorePlaces’ “+ Filter” modal.)
  *
  * Emits two callbacks:
@@ -9,34 +9,53 @@
  *   • onPlaceSelect(p) → full PlaceResult for map zoom / marker
  ***********************************************************************/
 
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Autocomplete, useLoadScript } from '@react-google-maps/api';
 
-/* ----------------------------- props ----------------------------- */
+/* ------------------------------------------------------------------ */
+/* Component props                                                    */
+/* ------------------------------------------------------------------ */
 interface Props {
-  onSearch:      (query: string)                        => void;
-  onPlaceSelect: (place: google.maps.places.PlaceResult)=> void;
+  onSearch:      (query: string)                         => void;
+  onPlaceSelect: (place: google.maps.places.PlaceResult) => void;
 }
 
+/* ------------------------------------------------------------------ */
+/* Component                                                          */
+/* ------------------------------------------------------------------ */
 export default function SearchBar({ onSearch, onPlaceSelect }: Props) {
-  /* controlled input value */
+  /* ─── Controlled textbox value ─── */
   const [query, setQuery] = useState('');
 
-  /* ref to read the selected PlaceResult */
+  /* ─── Ref so we can grab the selected PlaceResult ─── */
   const acRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-  /* load Google Maps JS SDK with Places library */
+  /* ─── Load Google Maps JS SDK (with Places library) ─── */
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries: ['places'],
   });
 
-  /* when user picks a prediction from the dropdown */
+  /* ----------------------------------------------------------------
+   * Create Manhattan bounding box *after* the SDK is ready.
+   * ----------------------------------------------------------------*/
+  const MANHATTAN_BOUNDS = useMemo(() => {
+    if (!isLoaded || !window.google) return undefined;
+
+    return new window.google.maps.LatLngBounds(
+      new window.google.maps.LatLng(40.679547, -74.047285), // SW corner
+      new window.google.maps.LatLng(40.882214, -73.906158), // NE corner
+    );
+  }, [isLoaded]);
+
+  /* ----------------------------------------------------------------
+   * When the user picks a prediction from the dropdown
+   * ----------------------------------------------------------------*/
   const handlePlaceChanged = () => {
     const place = acRef.current?.getPlace();
     if (!place) return;
 
-    /* 1️⃣ Reflect chosen name/address in the textbox + trigger search */
+    /* 1️⃣ Reflect chosen value in the textbox + trigger a search */
     if (place.name) {
       setQuery(place.name);
       onSearch(place.name);
@@ -49,13 +68,26 @@ export default function SearchBar({ onSearch, onPlaceSelect }: Props) {
     onPlaceSelect(place);
   };
 
-  /* ---------------- render ---------------- */
-  if (loadError) return <div>❌ Failed to load Google Maps</div>;
+  /* ----------------------------------------------------------------
+   * Render
+   * ----------------------------------------------------------------*/
+  if (loadError) {
+    return <div>❌ Failed to load Google Maps</div>;
+  }
 
   return (
     <div className="mb-4">
       {isLoaded ? (
         <Autocomplete
+          options={{
+            ...(MANHATTAN_BOUNDS
+              ? {
+                  bounds: MANHATTAN_BOUNDS,
+                  strictBounds: true,
+                }
+              : {}),
+            componentRestrictions: { country: 'us' },
+          }}
           onLoad={ac => (acRef.current = ac)}
           onPlaceChanged={handlePlaceChanged}
         >
