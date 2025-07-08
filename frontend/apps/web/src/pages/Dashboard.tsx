@@ -422,20 +422,19 @@ export default function Dashboard() {
   )}
 </div>
 
-          <p className="text-xs text-gray-400 italic mt-1">No destinations added yet.</p>
-          <div className="flex justify-end pt-2">
-           <button
-  onClick={(e) => {
-    e.stopPropagation();
-    setConfirmDeleteId(trip.tripId);
-  }}
-  className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
->
-  <span className="text-base leading-none"></span>
-  Delete
-</button>
+          
+          <div className="pt-1">
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      setConfirmDeleteId(trip.tripId);
+    }}
+    className="text-xs text-red-500 hover:text-red-700"
+  >
+    Delete
+  </button>
+</div>
 
-          </div>
         </div>
       </div>
     );
@@ -443,7 +442,7 @@ export default function Dashboard() {
 
   {/* Plan a New Trip card */}
   <div
-  className="bg-white border-2 border-gray-300 rounded-xl flex items-center justify-center h-48 w-full hover:shadow-md transition cursor-pointer"
+  className="bg-white border-2 border-gray-150 rounded-xl flex items-center justify-center h-48 w-full hover:shadow-md transition cursor-pointer"
   onClick={() => setShowModal(true)}
 >
 
