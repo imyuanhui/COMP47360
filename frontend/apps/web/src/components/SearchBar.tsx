@@ -93,7 +93,7 @@ export default function SearchBar({ onSearch, onPlaceSelect }: Props) {
         >
           <input
             type="text"
-            placeholder="Search for a place or attraction"
+            placeholder="Search for a place or attraction, use filters below to edit search"
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && onSearch(query)}

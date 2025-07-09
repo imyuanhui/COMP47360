@@ -105,6 +105,7 @@ const { saved, addPlace, removePlace, loading } = useSavedPlaces(tripId!);
       tripDate={tripDate}
       left={left}
       right={right}
+      heroCollapsed={true}
     />
   );
 }
