@@ -20,6 +20,7 @@ import { Trash2 } from "lucide-react";
 
 export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [editingTrip, setEditingTrip] = useState<any | null>(null);
   const [tripTime, setTripTime] = useState({ start: "09:00", end: "17:00" });
   const [newTripName, setNewTripName] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -54,6 +55,8 @@ const handleSmartSubmit = async () => {
   }
 
   try {
+    setLoading(true); // Show loader
+
     const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Not authenticated");
@@ -87,8 +90,11 @@ const handleSmartSubmit = async () => {
     });
   } catch (err: any) {
     toast.error(err.message || "Failed to generate itinerary");
+  } finally {
+    setLoading(false); // Hide loader
   }
 };
+
 
 
 useEffect(() => {
@@ -403,6 +409,83 @@ const shuffleVideos = () => {
         
         </button>
       </div>
+    {editingTrip && (
+  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+    <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md animate-fadeIn">
+      <h2 className="text-lg font-semibold mb-4">Edit Trip</h2>
+
+      <input
+        value={editingTrip.tripName}
+        onChange={(e) =>
+          setEditingTrip({ ...editingTrip, tripName: e.target.value })
+        }
+        className="w-full border px-3 py-2 rounded mb-3"
+        placeholder="Trip Name"
+      />
+
+      <DatePicker
+        selected={new Date(editingTrip.startDateTime)}
+        onChange={(date: Date | null) => {
+          if (!date) return;
+          const timeStart = editingTrip.startDateTime.split("T")[1];
+          const timeEnd = editingTrip.endDateTime.split("T")[1];
+          const newDateStr = date.toISOString().split("T")[0];
+          setEditingTrip({
+            ...editingTrip,
+            startDateTime: `${newDateStr}T${timeStart}`,
+            endDateTime: `${newDateStr}T${timeEnd}`,
+          });
+        }}
+        className="w-full border px-3 py-2 rounded mb-3"
+      />
+
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={() => setEditingTrip(null)}
+          className="text-gray-600"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={async () => {
+            try {
+              const token = localStorage.getItem("token");
+              if (!token) {
+                toast.error("Not authenticated");
+                return;
+              }
+              setAuthToken(token);
+
+              // 🔧 Replace this with your real API call (you might need to create updateTrip)
+              await fetch(`/api/trips/${editingTrip.tripId}`, {
+                method: "PUT",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  tripName: editingTrip.tripName,
+                  startDateTime: editingTrip.startDateTime,
+                  endDateTime: editingTrip.endDateTime,
+                }),
+              });
+
+              toast.success("Trip updated!");
+              setEditingTrip(null);
+              loadTrips();
+            } catch (err) {
+              toast.error("Failed to update trip");
+            }
+          }}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       {showSmartModal && (
   <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
     <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
@@ -523,7 +606,7 @@ const shuffleVideos = () => {
 </div>
 
           
-          <div className="pt-1">
+         <div className="pt-1 flex justify-between items-center">
   <button
     onClick={(e) => {
       e.stopPropagation();
@@ -533,7 +616,17 @@ const shuffleVideos = () => {
   >
     Delete
   </button>
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      setEditingTrip(trip);
+    }}
+    className="text-xs text-blue-500 hover:text-blue-700"
+  >
+    Edit
+  </button>
 </div>
+
 
         </div>
       </div>
@@ -643,6 +736,21 @@ const shuffleVideos = () => {
           </div>
         </div>
       )}
+    {loading && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm z-[100]">
+    <div className="w-16 h-16 border-4 border-t-transparent border-white rounded-full animate-spin"></div>
+  </div>
+)}
+<footer className="mt-12 py-6 border-t text-sm text-gray-600 text-center">
+  <div className="flex justify-center gap-8">
+    <button onClick={handleLogout} className="hover:underline">
+      Logout
+    </button>
+    <span className="cursor-pointer hover:underline">Contact Us</span>
+    <span className="cursor-pointer hover:underline">FAQs</span>
+  </div>
+</footer>
+
     </div>
   );
 }
