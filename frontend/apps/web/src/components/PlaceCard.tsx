@@ -72,7 +72,7 @@ export default function PlaceCard({
   }, [place.lat, place.lng, timeSlot]);
 
   /* --- class helpers ------------------------------------------------ */
-  const baseBtn  = 'w-28 px-2 py-1 text-xs rounded whitespace-nowrap transition-colors';
+  const baseBtn = 'min-w-[11rem] h-7 px-2 py-1 text-xs rounded whitespace-nowrap transition-colors';
   const ghostBtn = `${baseBtn} bg-gray-100 hover:bg-gray-200`;
 
   return (
@@ -111,7 +111,7 @@ export default function PlaceCard({
           )}
 
           {/* ───── Action buttons (Save / Itinerary) ───── */}
-          <div className="absolute right-0 top-0 flex flex-col items-end space-y-1">
+          <div className="absolute right-0 top-0 flex flex-col items-end space-y-1.5">
             {onSave && (
               <button
                 onClick={(e) => {
@@ -124,55 +124,65 @@ export default function PlaceCard({
                     : `${baseBtn} bg-[#022c44] text-white hover:bg-[#022c44]/90`
                 }
               >
-                {saved ? '- Saved Places' : '+ Saved Places'}
+                {saved ? 'Remove from Saved Places' : 'Add to Saved Places'}
               </button>
             )}
 
+            {/* ---- Itinerary ---- */}
             {onRemove ? (
+              /* We're on the My‑Itinerary page */
               <button
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                   onRemove(place.id, timeSlot);
                 }}
                 className={`${baseBtn} bg-red-100 text-red-700 hover:bg-red-200`}
               >
-                - My&nbsp;Itinerary
+                Remove&nbsp;from&nbsp;My&nbsp;Itinerary
               </button>
             ) : (
               !hideItinerary && (
-                <div className="relative">
-                  <button onClick={() => setOpenMenu(!openMenu)} className={ghostBtn}>
-                    + My Itinerary
+                timeSlot ? (
+                  /* Already added – show label instead of dropdown */
+                  <button className={`${ghostBtn} cursor-default`} disabled>
+                    Added&nbsp;to&nbsp;{timeSlot}&nbsp;timeslot
                   </button>
+                ) : (
+                  /* Not yet on itinerary – show slot picker */
+                  <div className="relative">
+                    <button onClick={() => setOpenMenu(!openMenu)} className={ghostBtn}>
+                      Add to My Itinerary
+                    </button>
 
-                  {openMenu && (
-                    <div className="absolute right-0 top-7 z-10 w-44 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
-                      <div className="mb-2 flex items-center justify-between">
-                        <p className="text-sm font-semibold leading-none">Add to your Trip</p>
-                        <button
-                          onClick={() => setOpenMenu(false)}
-                          className="text-sm text-gray-400 hover:text-gray-600"
-                          aria-label="Close"
-                        >
-                          x
-                        </button>
+                    {openMenu && (
+                      <div className="absolute right-0 top-10 z-10 w-44 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+                        <div className="mb-2 flex items-center justify-between">
+                          <p className="text-sm font-semibold leading-none">Add to your Trip</p>
+                          <button
+                            onClick={() => setOpenMenu(false)}
+                            className="text-sm text-gray-400 hover:text-gray-600"
+                            aria-label="Close"
+                          >
+                            x
+                          </button>
+                        </div>
+                        {TIMES.map(t => (
+                          <button
+                            key={t}
+                            onClick={e => {
+                              e.stopPropagation();
+                              onAdd(place.id, t);
+                              setOpenMenu(false);
+                            }}
+                            className="w-full rounded px-2 py-1 text-left text-sm hover:bg-gray-100"
+                          >
+                            {t} &nbsp; + Add to timeslot
+                          </button>
+                        ))}
                       </div>
-                      {TIMES.map(t => (
-                        <button
-                          key={t}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAdd(place.id, t);
-                            setOpenMenu(false);
-                          }}
-                          className="w-full rounded px-2 py-1 text-left text-sm hover:bg-gray-100"
-                        >
-                          {t} &nbsp; + Add to timeslot
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )
               )
             )}
           </div>

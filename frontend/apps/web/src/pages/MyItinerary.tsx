@@ -122,6 +122,7 @@ export default function MyItinerary() {
       tripDate={tripDate}
       left={left}
       right={right}
+      heroCollapsed={true}
     />
   );
 }
