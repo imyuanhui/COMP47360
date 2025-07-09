@@ -32,9 +32,18 @@ interface Props {
   tripId?: string; // ✅ add this
   left: React.ReactNode;
   right: React.ReactNode;
+  heroCollapsed?: boolean;
 }
 
-export default function Layout({ activeTab, left, right, tripName, tripDate, tripId }: Props) {
+export default function Layout({ 
+  activeTab, 
+  left, 
+  right, 
+  tripName, 
+  tripDate, 
+  tripId, 
+  heroCollapsed = false 
+}: Props) {
 
   const navigate = useNavigate();
 
@@ -53,11 +62,11 @@ export default function Layout({ activeTab, left, right, tripName, tripDate, tri
 
         {/* 1️⃣  Top-of-page header */}
         <header className="flex items-center justify-between px-6 py-4">
-          {/* brand / logo */}
-          <div className="flex items-center space-x-3">
+        {/* brand / logo → go to dashboard on click */}
+          <Link to="/dashboard" className="flex items-center space-x-3 hover:opacity-80">
             <img src="/assets/logo.jpg" alt="Logo" className="h-8 w-8 rounded" />
             <span className="text-lg font-bold">SmartTrip NYC</span>
-          </div>
+          </Link>
 
           {/* quick links (no routing library needed) */}
           <div className="space-x-4 text-sm text-gray-600">
@@ -69,7 +78,9 @@ export default function Layout({ activeTab, left, right, tripName, tripDate, tri
         {/* 2️⃣  Hero banner (dark overlay improves text contrast) */}
         <div className="px-6 pb-4">
           <div
-            className="relative h-64 w-full overflow-hidden rounded-[10px] bg-cover bg-center"
+            className=  {`relative w-full overflow-hidden rounded-[10px] 
+                        bg-cover bg-center transition-all duration-300
+                        ${heroCollapsed ? 'h-32' : 'h-64'}`}
             style={{ backgroundImage: "url('/assets/hero.jpg')" }}
           >
             <div className="absolute inset-0 flex items-end bg-black/30 p-6">
@@ -89,8 +100,8 @@ export default function Layout({ activeTab, left, right, tripName, tripDate, tri
         </div>
 
         {/* 3️⃣  Tab navigation */}
-        <nav>
-          <ul className="flex space-x-8 px-6 text-base">
+        <nav className="relative z-20 bg-white">
+        <ul className="flex space-x-8 px-6 pt-0 pb-2 text-base">
             {tabs.map(t => (
               <li key={t.label}>
                 <Link

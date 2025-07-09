@@ -8,7 +8,7 @@
  *   • Offers a “+ Filter” modal with persistent check-boxes
  *****************************************************************************************/
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout    from '../components/Layout';
 import SearchBar from '../components/SearchBar';
@@ -53,6 +53,7 @@ export default function ExplorePlaces() {
   /* ───── UI state ───── */
   const [query,   setQuery]   = useState('');
   const [loading, setLoading] = useState(false);
+  
 
   /* ───── Filter-modal state ───── */
   const [filters,      setFilters]      = useState<FilterType[]>([]);
@@ -75,6 +76,9 @@ export default function ExplorePlaces() {
 
   /* ───── Local “Saved Places” list (synced to localStorage) ───── */
   const [saved, setSaved] = useState<Place[]>([]);
+
+  /* ─── Banner state ─── */
+  const [heroCollapsed, setHeroCollapsed] = useState(false);
 
   /* Toggle add/remove */
   const togglePlace = (place: Place) => {
@@ -182,8 +186,10 @@ export default function ExplorePlaces() {
   /* =========================================================================
    * LEFT column – SearchBar, “+ Filter”, PlaceCard list
    * =========================================================================*/
+  
   const left = (
-    <>
+    /* Collapse hero banner on first hover */
+    <div onMouseEnter={() => setHeroCollapsed(true)}>
       <SearchBar
         onSearch={setQuery}
         onPlaceSelect={pr => {
@@ -205,11 +211,14 @@ export default function ExplorePlaces() {
           });
         }}
       />
-
+  
       {/* + Filter button */}
       <button
         disabled={loading}
-        onClick={() => { setDraftFilters(filters); setShowModal(true); }}
+        onClick={() => {
+          setDraftFilters(filters);
+          setShowModal(true);
+        }}
         className={`mb-4 rounded-[10px] px-3 py-1 transition-colors disabled:opacity-50 ${
           showModal
             ? 'bg-white text-[#022c44] border border-[#022c44]'
@@ -218,13 +227,13 @@ export default function ExplorePlaces() {
       >
         + Filter
       </button>
-
+  
       {loadError && (
         <p className="mt-4 text-center text-red-600">
           Failed to load Google Maps SDK: {loadError.message}
         </p>
       )}
-
+  
       {/* Scrollable list */}
       <div className="space-y-4 pr-1">
         {loading ? (
@@ -236,7 +245,7 @@ export default function ExplorePlaces() {
         ) : (
           combined.map(p => {
             const isSaved = saved.some(sp => sp.id === p.id);
-
+  
             return (
               <div
                 key={p.id}
@@ -256,7 +265,7 @@ export default function ExplorePlaces() {
                   onAdd={async (id, time) => {
                     const selected = combined.find(pl => pl.id === id);
                     if (!selected) return;
-
+  
                     const ok = await addToItinerary(selected, time);
                     if (!ok) alert(`Only three places allowed at ${time}.`);
                   }}
@@ -267,7 +276,7 @@ export default function ExplorePlaces() {
           })
         )}
       </div>
-    </>
+    </div>
   );
 
   /* =========================================================================
@@ -354,6 +363,7 @@ export default function ExplorePlaces() {
         tripDate={tripDate}
         left={left}
         right={right}
+        heroCollapsed={heroCollapsed}
       />
       {FilterModal}
     </>
