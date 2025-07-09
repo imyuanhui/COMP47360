@@ -19,6 +19,7 @@ import { Trash2 } from "lucide-react";
 
 
 export default function Dashboard() {
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [editingTrip, setEditingTrip] = useState<any | null>(null);
   const [tripTime, setTripTime] = useState({ start: "09:00", end: "17:00" });
@@ -43,6 +44,60 @@ const allVideoIds = [
   "7438833662516383006", "7452843363255979286", "7283792903828802859",
   "7386346933046021406", "7366414147325791534", "7523011556087483678"
 ];
+const chatbotQA = [
+  { q: "What is SmartTrip?", a: "SmartTrip is an itinerary planner for NYC using AI." },
+  { q: "How do I plan a new trip?", a: "Click the '+ Plan a New Trip' button to get started." },
+  { q: "What is a smart itinerary?", a: "It's an AI-generated trip plan based on your description." },
+  { q: "Can I edit my trip later?", a: "Yes! Just click the Edit button on your trip card." },
+  { q: "How do I delete a trip?", a: "Click the 'Delete' button on the trip card." },
+  { q: "Is SmartTrip free?", a: "Yes, it's completely free to use!" },
+  { q: "What data is stored?", a: "We store trip details like names and dates. No sensitive info." },
+  { q: "Can I logout?", a: "Yes, use the Logout button in the top right." },
+  { q: "Where is my itinerary?", a: "Click on any trip card to view your itinerary." },
+  { q: "What if I forget my password?", a: "Currently, there's no reset — but it's in our roadmap!" },
+  { q: "Can I get directions?", a: "We show places on a map, but don’t support full navigation yet." },
+  { q: "How do I use the Explore feature?", a: "Create a trip and you'll be taken to the Explore page!" },
+  { q: "How do I change my email?", a: "Go to Profile and click Edit to update it." },
+  { q: "What’s trending?", a: "Scroll to the Trending Places or TikTok section on the dashboard!" },
+  { q: "Where can I get help?", a: "This chatbot or 'Contact Us' at the bottom!" }
+];
+const [showBot, setShowBot] = useState(false);
+const [chatInput, setChatInput] = useState("");
+const [chatMessages, setChatMessages] = useState<
+  { sender: "user" | "bot"; text: string }[]
+>([]);
+const handleBotSend = () => {
+  if (!chatInput.trim()) return;
+
+  const question = chatInput.toLowerCase();
+  const matched = chatbotQA.find(({ q }) => q.toLowerCase() === question);
+
+  let botReply = "";
+  let newSuggestions: string[] = [];
+
+  if (matched) {
+    botReply = matched.a;
+    newSuggestions = [];
+  } else {
+    botReply = "🤖 Sorry, I don’t know that yet. Try one of these:";
+    // Pick 4 random questions
+    const shuffled = chatbotQA.map((q) => q.q).sort(() => 0.5 - Math.random());
+    newSuggestions = shuffled.slice(0, 4);
+  }
+
+  setChatMessages((prev) => [
+    ...prev,
+    { sender: "user", text: chatInput },
+    { sender: "bot", text: botReply },
+  ]);
+  setSuggestions(newSuggestions); // Update suggestions
+  setChatInput("");
+};
+const handleSuggestionClick = (question: string) => {
+  setChatInput(question);
+  setTimeout(() => handleBotSend(), 100); // Short delay to allow input to set
+};
+
 
 const [shuffledVideos, setShuffledVideos] = useState<string[]>([]);
 const [showSmartModal, setShowSmartModal] = useState(false);
@@ -282,6 +337,56 @@ const shuffleVideos = () => {
   return (
    <div className="min-h-screen overflow-y-auto hide-scrollbar bg-white text-gray-900 font-sans container mx-auto px-4 md:px-0">
 
+{showBot && (
+  <div className="fixed bottom-20 right-6 w-80 bg-white shadow-2xl rounded-lg z-50 flex flex-col max-h-[70vh] overflow-hidden border">
+    <div className="bg-[#03253D] text-white p-3 font-semibold text-sm flex justify-between items-center">
+      <span>SmartBot Assistant</span>
+      <button onClick={() => setShowBot(false)}>✕</button>
+    </div>
+    <div className="flex-1 overflow-y-auto px-3 py-2 text-sm">
+      {chatMessages.map((msg, i) => (
+        <div key={i} className={`my-2 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
+          <div
+            className={`inline-block px-3 py-2 rounded-lg ${
+              msg.sender === "user" ? "bg-blue-100 text-blue-800" : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            {msg.text}
+          </div>
+        </div>
+      ))}
+    {suggestions.length > 0 && (
+  <div className="mt-4 text-left text-sm">
+    <p className="text-gray-700 mb-2">Try asking:</p>
+    <div className="flex flex-wrap gap-2">
+      {suggestions.map((sugg, i) => (
+        <button
+          key={i}
+          onClick={() => handleSuggestionClick(sugg)}
+          className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs hover:bg-blue-200 transition"
+        >
+          {sugg}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
+
+    </div>
+    <div className="p-2 border-t flex gap-2">
+      <input
+        value={chatInput}
+        onChange={(e) => setChatInput(e.target.value)}
+        placeholder="Ask me something..."
+        className="flex-1 border px-2 py-1 rounded text-sm"
+        onKeyDown={(e) => e.key === "Enter" && handleBotSend()}
+      />
+      <button onClick={handleBotSend} className="text-blue-600 font-semibold text-sm">
+        Send
+      </button>
+    </div>
+  </div>
+)}
 
 
       <Toaster position="top-center" />
@@ -741,6 +846,13 @@ const shuffleVideos = () => {
     <div className="w-16 h-16 border-4 border-t-transparent border-white rounded-full animate-spin"></div>
   </div>
 )}
+<button
+  onClick={() => setShowBot(!showBot)}
+  className="fixed bottom-6 right-6 bg-[#03253D] text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center text-xl z-40"
+>
+  💬
+</button>
+
 <footer className="mt-12 py-6 border-t text-sm text-gray-600 text-center">
   <div className="flex justify-center gap-8">
     <button onClick={handleLogout} className="hover:underline">
