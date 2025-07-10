@@ -45,7 +45,11 @@ public class BusynessController {
 
             // Case 2: lat/lon provided → find nearest zone
             Zone nearestZone = zoneService.findNearestZone(lat, lon, 1.5);
-            Long zoneId = nearestZone.getZoneId();
+            if (nearestZone == null) {
+                nearestZone = zoneService.findNearestZone(lat, lon, 3.0);
+            }
+
+            Long zoneId = (nearestZone != null) ? nearestZone.getZoneId() : 0L;
 
             ZoneBusynessDto dto;
             if (timestamp == null) {

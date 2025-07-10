@@ -130,14 +130,14 @@ export default function LandingPage() {
 
         {/* Hero */}
         <section
-          className="container mx-auto px-4 md:px-0 text-center py-20"
+          className="container mx-auto px-4 md:px-0 text-center py-10"
           data-aos="zoom-in"
         >
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
             Stress-free holiday planning for NYC
           </h1>
           <p className="text-gray-600 text-base md:text-lg mb-6">
-            Get personally tailored daily travel plans
+            Sign up to get personally tailored travel plans and avoid the crowds in Manhattan
           </p>
           <button
             onClick={() => setShowSignup(true)}
@@ -145,6 +145,13 @@ export default function LandingPage() {
           >
             Start Planning
           </button>
+          <img                                            
+          src="../assets/landing-hero.jpg"
+          alt="Crowded New York street at dusk"
+          className="mt-10 w-full max-w-6xl mx-auto rounded-2xl shadow-lg object-cover"
+          /> 
+
+
         </section>
 
         {/* Tours */}
@@ -194,22 +201,14 @@ export default function LandingPage() {
         </section>
 
         {/* Footer */}
-        <footer className="bg-gray-50 py-6">
-          <div className="container mx-auto px-4 md:px-0 flex flex-col md:flex-row justify-between items-center text-gray-600">
-            <div className="flex space-x-4 mb-4 md:mb-0">
-              <a href="#" className="hover:text-gray-900 transition">
-                Sign Up
-              </a>
-              <a href="#" className="hover:text-gray-900 transition">
-                Contact Us
-              </a>
-              <a href="#" className="hover:text-gray-900 transition">
-                FAQs
-              </a>
+        <footer className="py-6">
+          <div className="container mx-auto px-4 md:px-0 
+          flex flex-col items-center text-gray-600 space-y-4">
+            <div className="flex justify-center space-x-6 text-sm">
+            <a href="#" className="hover:text-gray-900 transition">Sign&nbsp;Up</a>
+            <a href="#" className="hover:text-gray-900 transition">Contact&nbsp;Us</a>
+            <a href="#" className="hover:text-gray-900 transition">FAQs</a>
             </div>
-            <p className="text-sm">
-              &copy; {new Date().getFullYear()} SmartTrip NYC
-            </p>
           </div>
         </footer>
       </div>
