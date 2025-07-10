@@ -30,7 +30,8 @@ public class Place {
 
     @Column(nullable = false)
     private String category;
-
+    
+    @Column(nullable = true)
     private double estimatedDuration;
 
     @Transient
