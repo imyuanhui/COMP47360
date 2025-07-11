@@ -88,7 +88,7 @@ public class ItineraryService {
             if (totalTimeUsed + duration <= preferences.getDuration()) {
                 selectedItinerary.add(place);
                 usedPlaceIds.add(place.getPlaceId());
-                usedPlaceNames.add(p.getPlaceName());
+                usedPlaceNames.add(place.getPlaceName());
                 totalTimeUsed += duration;
             }
         }
