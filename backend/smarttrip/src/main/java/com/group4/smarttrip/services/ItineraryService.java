@@ -2,12 +2,14 @@ package com.group4.smarttrip.services;
 
 import com.group4.smarttrip.dtos.UserPreferences;
 import com.group4.smarttrip.entities.Place;
+import com.group4.smarttrip.entities.Zone;
 import com.group4.smarttrip.repositories.PlaceRepository;
 import com.group4.smarttrip.repositories.ZoneRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.group4.smarttrip.utils.GeoUtils.haversineDistance;
 
@@ -16,150 +18,149 @@ import static com.group4.smarttrip.utils.GeoUtils.haversineDistance;
 public class ItineraryService {
     private final PlaceRepository placeRepository;
     private final ZoneRepository zoneRepository;
+    private final ZoneService zoneService;
 
     private static final Set<String> SINGLE_PLACE_CATEGORIES = Set.of(
-            "cafe", "fast_food", "ice_cream", "restaurant", "massage"
+            "cafe", "fast_food", "food_court", "ice_cream", "restaurant", "bakery", "spa",
+            "internet_cafe", "zoo", "aquarium", "karaoke"
     );
 
+    private static final Set<String> FOOD_CATEGORIES = Set.of(
+            "cafe", "fast_food", "food_court", "ice_cream", "restaurant", "bakery"
+    );
+
+    private static final List<Long> DEFAULT_ZONE_IDS = List.of(14L, 25L, 22L);
+    private static final Random RANDOM = new Random();
+
     public List<Place> generateItinerary(UserPreferences preferences) {
-        List<Place> itinerary = new ArrayList<>();
-        String zoneToUse = preferences.getZoneName();
-        boolean needToDetermineZone = (zoneToUse == null);
+        List<Place> selectedItinerary = new ArrayList<>();
 
-        Map<String, List<Place>> categoryToPlaces = new HashMap<>();
+        // 1) Determine candidate zones
+        List<Long> candidateZoneIds = resolveZoneCandidates(preferences.getZoneName());
 
-        // 1) Collect candidate places per category
-        for (String category : preferences.getPlaceCategory()) {
-            List<Place> candidatePlaces;
-            if (zoneToUse != null) {
-                Long zoneIdToUse = getZoneIdByName(zoneToUse);
-                candidatePlaces = placeRepository.findByZone_ZoneIdAndCategory(zoneIdToUse, category);
-            } else {
-                candidatePlaces = placeRepository.findByCategory(category);
-            }
-
-            if (!candidatePlaces.isEmpty()) {
-                categoryToPlaces.put(category, candidatePlaces);
-            }
-        }
-
-        // 2) Determine zone if needed
-        if (needToDetermineZone) {
-            zoneToUse = determineZoneFromCandidates(categoryToPlaces);
-            if (zoneToUse == null) {
-                Optional<Place> anyPlace = categoryToPlaces.values().stream()
-                        .flatMap(List::stream).findFirst();
-                zoneToUse = anyPlace.map(p -> p.getZone() != null ? p.getZone().getZoneName() : null).orElse(null);
-            }
-        }
-
-        if (zoneToUse == null) {
-            return Collections.emptyList();
-        }
-
-        // 3) Fetch final candidates with determined zone
+        // 2) Gather all place candidates by zone and category
         List<Place> finalCandidates = new ArrayList<>();
-        Long zoneIdToUse = getZoneIdByName(zoneToUse);
-
-        for (String category : preferences.getPlaceCategory()) {
-            List<Place> candidatePlaces = placeRepository.findByZone_ZoneIdAndCategory(zoneIdToUse, category);
-            if (!candidatePlaces.isEmpty()) {
-                if (List.of("cafe", "fast_food", "ice_cream", "restaurant", "massage").contains(category)) {
-                    finalCandidates.add(candidatePlaces.get(0));
-                } else {
-                    finalCandidates.addAll(candidatePlaces.subList(0, Math.min(3, candidatePlaces.size())));
+        for (long zoneId : candidateZoneIds) {
+            for (String category : preferences.getPlaceCategory()) {
+                List<Place> candidates = placeRepository.findByZone_ZoneIdAndCategory(zoneId, category);
+                Collections.shuffle(candidates, RANDOM);
+                if (!candidates.isEmpty()) {
+                    if (SINGLE_PLACE_CATEGORIES.contains(category)) {
+                        finalCandidates.add(candidates.get(0));
+                    } else {
+                        finalCandidates.addAll(candidates.subList(0, Math.min(3, candidates.size())));
+                    }
                 }
             }
         }
 
-        // 4) Select POIs fitting in time budget, one per category
-        double totalTime = 0.0;
+        // 3) Select places that fit in the time budget
+        double totalTimeUsed = 0.0;
         Set<String> includedCategories = new HashSet<>();
+        Set<Long> usedPlaceIds = new HashSet<>();
+        Set<String> usedPlaceNames = new HashSet<>();
 
-        // First pass: guarantee at least one place for each requested category
+        // First pass: ensure each requested category is represented
         for (String category : preferences.getPlaceCategory()) {
-            List<Place> candidatePlaces = finalCandidates.stream()
-                    .filter(p -> p.getCategory().equals(category))
-                    .toList();
-
-            if (!candidatePlaces.isEmpty()) {
-                Place firstPlace = candidatePlaces.get(0);
-                double duration = firstPlace.getEstimatedDuration();
-                if (totalTime + duration <= preferences.getDuration()) {
-                    itinerary.add(firstPlace);
-                    totalTime += duration;
+            Optional<Place> match = finalCandidates.stream()
+                    .filter(p -> p.getCategory().equals(category) && !usedPlaceIds.contains(p.getPlaceId()))
+                    .findFirst();
+            if (match.isPresent()) {
+                Place p = match.get();
+                double duration = p.getEstimatedDuration();
+                if (totalTimeUsed + duration <= preferences.getDuration()) {
+                    selectedItinerary.add(p);
+                    usedPlaceIds.add(p.getPlaceId());
+                    usedPlaceNames.add(p.getPlaceName());
+                    totalTimeUsed += duration;
                     includedCategories.add(category);
                 }
             }
         }
 
-        // Second pass: fill remaining time with extra places from non-consumable categories
+        // Second pass: fill remaining time with other non-single-use POIs
         for (Place place : finalCandidates) {
-            if (totalTime >= preferences.getDuration()) break;
+            if (totalTimeUsed >= preferences.getDuration()) break;
+            if (usedPlaceIds.contains(place.getPlaceId()) || usedPlaceNames.contains(place.getPlaceName())) continue;
+            if (SINGLE_PLACE_CATEGORIES.contains(place.getCategory())) continue;
 
-            // Only consider places from non-consumable categories
-            if (!SINGLE_PLACE_CATEGORIES.contains(place.getCategory())) {
-                // Skip if this place was already added in baseline
-                boolean alreadyIncluded = itinerary.stream()
-                        .anyMatch(p -> p.getPlaceId().equals(place.getPlaceId()));
-                if (alreadyIncluded) continue;
-
-                double duration = place.getEstimatedDuration();
-                if (totalTime + duration <= preferences.getDuration()) {
-                    itinerary.add(place);
-                    totalTime += duration;
-                }
+            double duration = place.getEstimatedDuration();
+            if (totalTimeUsed + duration <= preferences.getDuration()) {
+                selectedItinerary.add(place);
+                usedPlaceIds.add(place.getPlaceId());
+                usedPlaceNames.add(p.getPlaceName());
+                totalTimeUsed += duration;
             }
         }
 
-        return getBestVisitingSequence(itinerary);
+        return arrangeVisitingSequence(selectedItinerary, preferences.getStartingTime());
+    }
+
+    private List<Long> resolveZoneCandidates(String zoneName) {
+        if (zoneName == null) return DEFAULT_ZONE_IDS;
+
+        return zoneService.getZoneByName(zoneName)
+                .map(zone -> zoneService.getTop3NearestZones(zone.getCentralLat(), zone.getCentralLon())
+                        .stream()
+                        .map(Zone::getZoneId)
+                        .collect(Collectors.toList()))
+                .orElse(DEFAULT_ZONE_IDS);
     }
 
 
-    private Long getZoneIdByName(String zoneName) {
-        return zoneRepository.findByZoneName(zoneName).stream()
-                .findFirst()
-                .map(zone -> zone.getZoneId())
-                .orElseThrow(() -> new IllegalArgumentException("Zone not found: " + zoneName));
-    }
-
-    private String determineZoneFromCandidates(Map<String, List<Place>> categoryToPlaces) {
-        for (Map.Entry<String, List<Place>> entry : categoryToPlaces.entrySet()) {
-            if (entry.getValue().size() == 1) {
-                Place place = entry.getValue().get(0);
-                if (place.getZone() != null) {
-                    return place.getZone().getZoneName();
-                }
-            }
-        }
-        return null;
-    }
-
-    private List<Place> getBestVisitingSequence(List<Place> places) {
+    private List<Place> arrangeVisitingSequence(List<Place> places, int startHour) {
         if (places == null || places.isEmpty()) return Collections.emptyList();
 
-        List<Place> remaining = new ArrayList<>(places);
+        List<Place> foodPlaces = places.stream()
+                .filter(p -> FOOD_CATEGORIES.contains(p.getCategory()))
+                .collect(Collectors.toList());
+
+        List<Place> nonFoodPlaces = places.stream()
+                .filter(p -> !FOOD_CATEGORIES.contains(p.getCategory()))
+                .collect(Collectors.toList());
+
+        // Sort non-food places based on proximity using greedy nearest neighbor
         List<Place> sequence = new ArrayList<>();
+        if (!nonFoodPlaces.isEmpty()) {
+            Place current = nonFoodPlaces.remove(0);
+            sequence.add(current);
 
-        // Start with the first place as the starting point
-        Place current = remaining.remove(0);
-        sequence.add(current);
+            while (!nonFoodPlaces.isEmpty()) {
+                Place finalCurrent = current;
+                Place next = nonFoodPlaces.stream()
+                        .min(Comparator.comparingDouble(p -> haversineDistance(finalCurrent.getLat(), finalCurrent.getLon(), p.getLat(), p.getLon())))
+                        .orElse(null);
 
-        while (!remaining.isEmpty()) {
-            // Find the nearest next place to current
-            Place finalCurrent = current;
-            Place next = remaining.stream()
-                    .min(Comparator.comparingDouble(p -> haversineDistance(finalCurrent.getLat(), finalCurrent.getLon(), p.getLat(), p.getLon())))
-                    .orElse(null);
+                if (next == null) break;
 
-            if (next == null) break;
-
-            sequence.add(next);
-            remaining.remove(next);
-            current = next;
+                sequence.add(next);
+                nonFoodPlaces.remove(next);
+                current = next;
+            }
         }
 
-        return sequence;
-    }
+        // Insert food places logically based on total trip duration and start time
+        int currentHour = startHour;
+        for (Place place : sequence) {
+            currentHour += (int) Math.round(place.getEstimatedDuration());
+        }
 
+        int foodInsertHour = Math.max(12, Math.min(14, startHour + 3)); // Try to insert food around lunch
+        List<Place> finalItinerary = new ArrayList<>();
+        currentHour = startHour;
+
+        for (Place place : sequence) {
+            // Insert food if near lunch time
+            if (!foodPlaces.isEmpty() && currentHour >= foodInsertHour && currentHour <= foodInsertHour + 1) {
+                finalItinerary.add(foodPlaces.remove(0));
+            }
+            finalItinerary.add(place);
+            currentHour += (int) Math.round(place.getEstimatedDuration());
+        }
+
+        // Add remaining food places at the end
+        finalItinerary.addAll(foodPlaces);
+
+        return finalItinerary;
+    }
 }
