@@ -133,16 +133,20 @@ const handleSmartSubmit = async () => {
       throw new Error(data.message || "Failed to generate smart itinerary");
     }
 
-    toast.success("Smart itinerary created!");
-    setShowSmartModal(false);
+  toast.success("Smart itinerary created!");
+setShowSmartModal(false);
 
-    navigate(`/myitinerary/${data.tripId}`, {
-      state: {
-        tripName: data.tripName,
-        tripStartDate: data.startDateTime.split("T")[0],
-        tripId: data.tripId,
-      },
-    });
+// 🔁 Refresh the trips list so it's available immediately on Dashboard
+await loadTrips();
+
+// ✅ Navigate to itinerary
+navigate(`/myitinerary/${data.tripId}`, {
+  state: {
+    tripName: data.tripName,
+    tripStartDate: data.startDateTime.split("T")[0],
+    tripId: data.tripId,
+  },
+});
   } catch (err: any) {
     toast.error(err.message || "Failed to generate itinerary");
   } finally {
