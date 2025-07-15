@@ -1,6 +1,7 @@
 from pytrends.request import TrendReq
 from datetime import datetime, timedelta
 import time, random, math
+import json
 from pathlib import Path
 
 DEFAULT_INTEREST = 0  # fallback if trends data is missing
@@ -28,7 +29,9 @@ def fetch_interest(zone_name, timeframe='now 7-d', geo='US-NY', tz=360):
             print(f"[WARN] No trends data for '{zone_name}' in timeframe '{timeframe}'. Returning default {DEFAULT_INTEREST}.")
             return DEFAULT_INTEREST
         
-        df_y = df.loc[(df.index >= y_start) & (df.index <= y_end)]
+        # df_y = df.loc[(df.index >= y_start) & (df.index <= y_end)]
+        df_y = df.loc[(df["date"] >= y_start) & (df["date"] <= y_end)]
+
         avg_interest = df_y[zone_name].mean() if zone_name in df_y else DEFAULT_INTEREST
 
         print(f"[INFO] Average interest for '{zone_name}': {avg_interest:.2f}")

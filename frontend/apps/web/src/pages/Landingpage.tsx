@@ -180,7 +180,7 @@ export default function LandingPage() {
           {/* CTA button */}
           <button
             onClick={() => setShowSignup(true)}
-            className="bg-[#03253D] text-white px-8 py-3 rounded-full text-sm md:text-base shadow hover:bg-[#021b2b] transition"
+            className="bg-[#03253D] text-white px-8 py-2 rounded-full text-sm md:text-base shadow hover:bg-[#021b2b] transition"
           >
             Start Planning
           </button>
