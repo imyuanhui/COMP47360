@@ -1,6 +1,7 @@
 from pytrends.request import TrendReq
 from datetime import datetime, timedelta
 import time, random, math
+from pathlib import Path
 
 DEFAULT_INTEREST = 0  # fallback if trends data is missing
 
@@ -36,3 +37,35 @@ def fetch_interest(zone_name, timeframe='now 7-d', geo='US-NY', tz=360):
     except Exception as e:
         print(f"[ERROR] Trends API failed for '{zone_name}': {e}. Returning default {DEFAULT_INTEREST}.")
         return DEFAULT_INTEREST
+    
+
+
+#ADD
+CACHE_FILE = Path(__file__).parent / "trends_cache.json"
+def get_cached_interest(zone_name):
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    
+    # Read cache if exists and is today
+    if CACHE_FILE.exists():
+        with open(CACHE_FILE) as f:
+            cache = json.load(f)
+        if cache.get("data") == today_str:
+            data = cache.get("data", {})
+            if zone_name in data:
+                print(f"[CACHE] Using cached interest for {zone_name}")
+                return data[zone_name]
+    else:
+        cache = {"date": today_str, "data": {}}
+    
+    print(f"[FETCH] No cache or expired. Fetching new data for {zone_name}")
+    interest = fetch_interest(zone_name)
+    
+    #read cache file
+    if cache.get("date")!= today_str:
+        cache ={"date": today_str, "data": {}}
+    cache["data"][zone_name] = interest
+    
+    with open(CACHE_FILE, "w") as f:
+        json.dump(cache, f)
+    
+    return interest
