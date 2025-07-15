@@ -114,7 +114,7 @@ public class BusynessService {
         requestBody.put("weather", weatherMap);
 //        requestBody.put("flow_features", flowFeaturesMap);
 
-        String url = "http://127.0.0.1:5000/predict/randomforest";
+        String url = "http://flask-ml:5000/predict/randomforest";
         Map<String, Object> responseBody = restTemplate.postForObject(url, requestBody, Map.class);
         return ((Number) responseBody.get("busyness_score")).doubleValue();
     }

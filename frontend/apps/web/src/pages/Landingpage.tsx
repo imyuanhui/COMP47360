@@ -4,17 +4,50 @@ import { useNavigate } from "react-router-dom";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import toast from "react-hot-toast";
+// Cast‑to‑any approach to silence TypeScript errors for missing typings
+import { Carousel as RawCarousel } from "react-responsive-carousel";
+import "react-responsive-carousel/lib/styles/carousel.min.css";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   signup as apiSignup,
   login as apiLogin,
   setAuthToken,
 } from "../services/api";
+
+// TypeScript shim: assume any props accepted
+const Carousel = RawCarousel as unknown as React.ComponentType<any>;
+
 // Utility function to validate email format
 const isValidEmail = (email: string): boolean => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regex.test(email);
 };
 
+// Data for carousel slides and their paired captions
+const slides = [
+  {
+    img: "/assets/landing-hero-1.jpg",
+    alt: "Explore top travel destinations in NYC",
+    caption: "Explore top travel destinations in NYC",
+  },
+  {
+    img: "/assets/landing-hero-3.jpg",
+    alt: "Avoid the crowds using busyness forecasts",
+    caption: "Avoid the crowds using busyness forecasts",
+  },
+  {
+    img: "/assets/landing-hero-2.jpg",
+    alt: "Avoid the crowds using busyness forecasts",
+    caption: "Get bespoke AI generated daily itineraries",
+  },
+  {
+    img: "/assets/landing-hero-4.jpg",
+    alt: "Watch the latest trending videos from NYC",
+    caption: "Watch the latest trending videos from NYC",
+  },
+] as const;
+
+type Slide = typeof slides[number];
 
 export default function LandingPage() {
   const [showLogin, setShowLogin] = useState(false);
@@ -24,70 +57,67 @@ export default function LandingPage() {
   const [signupUsername, setSignupUsername] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [currentSlide, setCurrentSlide] = useState<number>(0);
   const navigate = useNavigate();
 
   useEffect(() => {
     AOS.init({ duration: 800, once: true });
   }, []);
 
- const handleLogin = async () => {
-  try {
-    const { accessToken } = await apiLogin(loginIdentifier, loginPassword);
-    localStorage.setItem("token", accessToken);
-    setAuthToken(accessToken);
-    toast.success("Logged in!");
-    setShowLogin(false);
-    navigate("/dashboard");
-  } catch (err: any) {
-    const error = err.response?.data?.error?.toLowerCase() || "";
+  const handleLogin = async () => {
+    try {
+      const { accessToken } = await apiLogin(loginIdentifier, loginPassword);
+      localStorage.setItem("token", accessToken);
+      setAuthToken(accessToken);
+      toast.success("Logged in!");
+      setShowLogin(false);
+      navigate("/dashboard");
+    } catch (err: any) {
+      const error = err.response?.data?.error?.toLowerCase() || "";
 
-    if (error.includes("not found")) {
-      toast.error("No account found. Try signing up.");
-    } else if (error.includes("wrong password")) {
-      toast.error("Incorrect password. Please try again.");
-    } else if (error.includes("invalid credentials")) {
-      toast.error("Invalid email or password.");
-    } else {
-      toast.error("Login failed");
+      if (error.includes("not found")) {
+        toast.error("No account found. Try signing up.");
+      } else if (error.includes("wrong password")) {
+        toast.error("Incorrect password. Please try again.");
+      } else if (error.includes("invalid credentials")) {
+        toast.error("Invalid email or password.");
+      } else {
+        toast.error("Login failed");
+      }
+
+      console.error("Login error:", error);
+    }
+  };
+
+  const handleSignup = async () => {
+    if (!signupUsername || !signupEmail || !signupPassword) {
+      toast.error("Please fill in all fields.");
+      return;
     }
 
-    console.error("Login error:", error);
-  }
-};
-
-
- const handleSignup = async () => {
-  if (!signupUsername || !signupEmail || !signupPassword) {
-    toast.error("Please fill in all fields.");
-    return;
-  }
-
-  if (!isValidEmail(signupEmail)) {
-    toast.error("Please enter a valid email address.");
-    return;
-  }
-
-  try {
-    await apiSignup(signupUsername, signupEmail, signupPassword);
-    toast.success("Account created! Please log in.");
-    setShowSignup(false);
-    setShowLogin(true);
-  } catch (err: any) {
-    const msg = err.response?.data?.error || "Signup failed";
-    console.error("Signup error:", msg);
-
-    if (msg.toLowerCase().includes("email")) {
-      toast.error("Email already in use. Try logging in instead.");
-    } else if (msg.toLowerCase().includes("username")) {
-      toast.error("Username already taken. Try a different one.");
-    } else {
-      toast.error(msg);
+    if (!isValidEmail(signupEmail)) {
+      toast.error("Please enter a valid email address.");
+      return;
     }
-  }
-};
 
+    try {
+      await apiSignup(signupUsername, signupEmail, signupPassword);
+      toast.success("Account created! Please log in.");
+      setShowSignup(false);
+      setShowLogin(true);
+    } catch (err: any) {
+      const msg = err.response?.data?.error || "Signup failed";
+      console.error("Signup error:", msg);
 
-
+      if (msg.toLowerCase().includes("email")) {
+        toast.error("Email already in use. Try logging in instead.");
+      } else if (msg.toLowerCase().includes("username")) {
+        toast.error("Username already taken. Try a different one.");
+      } else {
+        toast.error(msg);
+      }
+    }
+  };
 
   const isModalOpen = showLogin || showSignup;
 
@@ -105,11 +135,7 @@ export default function LandingPage() {
           data-aos="fade-down"
         >
           <div className="flex items-center gap-3">
-            <img
-              src="/assets/logo.jpg"
-              alt="Logo"
-              className="h-8 w-8"
-            />
+            <img src="/assets/logo.jpg" alt="Logo" className="h-8 w-8" />
             <span className="text-xl font-bold">SmartTrip NYC</span>
           </div>
           <div className="flex items-center gap-6 text-sm">
@@ -130,84 +156,74 @@ export default function LandingPage() {
 
         {/* Hero */}
         <section
-          className="container mx-auto px-4 md:px-0 text-center py-10"
+          className="container mx-auto px-4 md:px-0 text-center flex flex-col items-center justify-center gap-4 min-h-[calc(100vh-120px)]"
           data-aos="zoom-in"
         >
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
-            Stress-free holiday planning for NYC
+          <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#03253D]">
+            Stress-free travel planning for NYC
           </h1>
-          <p className="text-gray-600 text-base md:text-lg mb-6">
-            Sign up to get personally tailored travel plans and avoid the crowds in Manhattan
-          </p>
+
+          {/* Dynamic subtitle tied to carousel */}
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={currentSlide}
+              initial={{ x: 80, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -80, opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-gray-600 text-base md:text-lg"
+            >
+              {slides[currentSlide].caption}
+            </motion.p>
+          </AnimatePresence>
+
+          {/* CTA button */}
           <button
             onClick={() => setShowSignup(true)}
             className="bg-[#03253D] text-white px-8 py-3 rounded-full text-sm md:text-base shadow hover:bg-[#021b2b] transition"
           >
             Start Planning
           </button>
-          <img                                            
-          src="../assets/landing-hero.jpg"
-          alt="Crowded New York street at dusk"
-          className="mt-10 w-full max-w-6xl mx-auto rounded-2xl shadow-lg object-cover"
-          /> 
 
-
-        </section>
-
-        {/* Tours */}
-        <section
-          className="container mx-auto px-4 md:px-0 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 py-12"
-          data-aos="fade-up"
-        >
-          {[
-            { title: "Central Park Tour", date: "dd.mm.yyyy", places: 3 },
-            { title: "Downtown Tour", date: "dd.mm.yyyy", places: 3 },
-            { title: "Uptown Tour", date: "dd.mm.yyyy", places: 3 },
-            { title: "Hidden Gems Tour", date: "dd.mm.yyyy", places: 3 },
-          ].map((t, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition"
+          {/* Carousel */}
+          <div className="w-full max-w-6xl mx-auto rounded-2xl shadow-lg overflow-hidden mt-2 mb-12">
+            <Carousel
+              showThumbs={false}
+              showStatus={false}
+              infiniteLoop
+              autoPlay
+              interval={5000}
+              transitionTime={700}
+              swipeable
+              emulateTouch
+              onChange={(index: number) => setCurrentSlide(index)}
             >
-              <div className="bg-gray-200 h-40 rounded mb-4" />
-              <h3 className="text-center font-semibold mb-1">{t.title}</h3>
-              <p className="text-center text-sm text-gray-500">
-                {t.date} | {t.places} places
-              </p>
-            </div>
-          ))}
-        </section>
-
-        {/* Mobile/Web Demo */}
-        <section
-          className="container mx-auto px-4 md:px-0 text-center py-12"
-          data-aos="zoom-in"
-        >
-          <h2 className="text-2xl font-semibold mb-6">
-            Available on Web or Mobile
-          </h2>
-          <div className="flex justify-center gap-6">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="bg-gray-200 w-40 h-56 rounded shadow hover:shadow-lg transition"
-              >
-                <div className="h-full flex items-center justify-center text-gray-500">
-                  Mobile Page {i}
+              {slides.map(({ img, alt }: Slide, idx: number) => (
+                <div key={idx}>
+                  <img
+                        src={img}
+                        alt={alt}
+                        className="object-cover object-top w-full max-h-[600px]"
+                  />
                 </div>
-              </div>
-            ))}
+              ))}
+            </Carousel>
           </div>
         </section>
 
         {/* Footer */}
         <footer className="py-6">
-          <div className="container mx-auto px-4 md:px-0 
-          flex flex-col items-center text-gray-600 space-y-4">
+          <div className="container mx-auto px-4 md:px-0 flex flex-col items-center text-gray-600 space-y-4">
             <div className="flex justify-center space-x-6 text-sm">
-            <a href="#" className="hover:text-gray-900 transition">Sign&nbsp;Up</a>
-            <a href="#" className="hover:text-gray-900 transition">Contact&nbsp;Us</a>
-            <a href="#" className="hover:text-gray-900 transition">FAQs</a>
+              <a href="#" className="hover:text-gray-900 transition">
+                Sign Up
+              </a>
+              <a href="#" className="hover:text-gray-900 transition">
+                Contact Us
+              </a>
+              <a href="#" className="hover:text-gray-900 transition">
+                FAQs
+              </a>
             </div>
           </div>
         </footer>
@@ -245,15 +261,11 @@ export default function LandingPage() {
               Continue
             </button>
             <button className="w-full border border-gray-300 py-2 rounded text-sm flex items-center justify-center gap-2 mb-4">
-              <img
-                src="/assets/google-icon.png"
-                className="w-5 h-5"
-                alt="Google"
-              />
+              <img src="/assets/google-icon.png" className="w-5 h-5" alt="Google" />
               Continue with Google
             </button>
             <p className="text-sm text-center">
-              Don’t have an account?{" "}
+              Don't have an account?{" "}
               <button
                 onClick={() => {
                   setShowLogin(false);
@@ -307,11 +319,7 @@ export default function LandingPage() {
               Create Account
             </button>
             <button className="w-full border border-gray-300 py-2 rounded text-sm flex items-center justify-center gap-2 mb-4">
-              <img
-                src="/assets/google-icon.png"
-                className="w-5 h-5"
-                alt="Google"
-              />
+              <img src="/assets/google-icon.png" className="w-5 h-5" alt="Google" />
               Sign up with Google
             </button>
             <p className="text-sm text-center">
