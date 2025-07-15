@@ -77,8 +77,9 @@ export default function ExplorePlaces() {
   /* ───── Local “Saved Places” list (synced to localStorage) ───── */
   const [saved, setSaved] = useState<Place[]>([]);
 
-  /* ─── Banner state ─── */
+  /* ─── Hero banner state ─── */
   const [heroCollapsed, setHeroCollapsed] = useState(false);
+  const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
 
   /* Toggle add/remove */
   const togglePlace = (place: Place) => {
@@ -183,13 +184,24 @@ export default function ExplorePlaces() {
     ...recommended.filter(r => !searchResults.some(s => s.id === r.id)),
   ];
 
+  /* Reinstate the size of the hero image after 5 seconds*/
+  const handleCardHover = () => {
+    setHeroCollapsed(true);
+    if (inactivityTimer.current) {
+      clearTimeout(inactivityTimer.current);
+    }
+    inactivityTimer.current = setTimeout(() => {
+      setHeroCollapsed(false);
+    }, 5000);
+  };
+
   /* =========================================================================
    * LEFT column – SearchBar, “+ Filter”, PlaceCard list
    * =========================================================================*/
   
   const left = (
     /* Collapse hero banner on first hover */
-    <div onMouseEnter={() => setHeroCollapsed(true)}>
+    <div onMouseEnter={handleCardHover}>
       <SearchBar
         onSearch={setQuery}
         onPlaceSelect={pr => {
@@ -348,6 +360,13 @@ export default function ExplorePlaces() {
         setMapZoom(15);
         setInfoPlace(p);
       }}
+      saved={saved}
+      onToggleSave={togglePlace}
+      onAddToItinerary={async (place, time) => {
+        const ok = await addToItinerary(place, time);
+        if (!ok) alert(`Only three places allowed at ${time}.`);
+      }}
+
     />
   );
 

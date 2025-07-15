@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Place } from '../types';
-import axios from 'axios';                     // Make sure axios is installed
+import axios from 'axios';
 
 interface Props {
   place: Place;
@@ -35,7 +35,7 @@ export default function PlaceCard({
   const [openMenu, setOpenMenu] = useState(false);
   const [busynessLevel, setBusynessLevel] = useState<string | null>(null);
 
-  /* ------- Esc‑key closes dropdown ------- */
+  /* ------- Esc-key closes dropdown ------- */
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpenMenu(false);
@@ -63,7 +63,7 @@ export default function PlaceCard({
           Array.isArray(data) ? data[0]?.busynessLevel ?? 'unknown' : data.busynessLevel ?? 'unknown',
         );
       } catch (err) {
-        console.error('Failed to fetch business:', err);
+        console.error('Failed to fetch busyness:', err);
         setBusynessLevel('unknown');
       }
     };
@@ -90,58 +90,95 @@ export default function PlaceCard({
 
         <div className="relative flex-1">
           <h3 className="pr-32 font-semibold leading-tight">{place.name}</h3>
-          <p className="mb-1 truncate pr-32 text-sm text-gray-500">{place.address}</p>
+          <p className="mb-1 truncate pr-32 text-sm text-gray-500">
+            {place.address
+              ?.replace(/\b\d{5}(-\d{4})?\b/, '') // remove ZIP anywhere
+              .replace(/,\s*United States$/, '') // remove ', United States'
+              .replace(/,\s*NY\b/, '') // remove 'NY'
+              .replace(/\s{2,}/g, ' ') // remove double spaces from cleanup
+              .replace(/,\s*$/, '') // trim trailing comma if any
+              .trim()}
+          </p>
 
           {place.crowdTime && (
             <p className="text-xs text-gray-600">Biggest crowds at {place.crowdTime}</p>
           )}
-          {place.visitTime && (
-            <p className="text-xs text-gray-600">Recommended visit at {place.visitTime}</p>
-          )}
+          {place.visitTime && (() => {
+            const date = new Date(place.visitTime);
+            const datePart = date.toLocaleDateString(undefined, {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            });
+            const timePart = date.toTimeString().slice(0, 5); // e.g. "09:00"
+            return (
+              <p className="text-xs text-[#022c44] font-bold">
+                Recommended visit at {datePart} at {timePart}
+              </p>
+            );
+          })()}
           {place.rating !== undefined && (
             <p className="text-xs text-gray-600">Rating: {place.rating}/5</p>
           )}
 
-          {showRating && (
-            <p className="text-xs text-gray-600">
-              {busynessLevel
-                ? `Business rating${timeSlot ? ` at ${timeSlot}` : ''}: ${busynessLevel}`
-                : 'Loading business...'}
-            </p>
-          )}
+{showRating && (
+  <div className="flex justify-between items-center text-xs text-gray-600">
+    <span>
+      Busyness rating{timeSlot ? ` at ${timeSlot}` : ''}:{' '}
+      {busynessLevel ? (
+        <span
+          className={`font-bold ${
+            busynessLevel === 'low'
+              ? 'text-green-600'
+              : busynessLevel === 'med'
+              ? 'text-orange-500'
+              : busynessLevel === 'high'
+              ? 'text-red-600'
+              : ''
+          }`}
+        >
+          {busynessLevel}
+        </span>
+      ) : (
+        'Loading busyness...'
+      )}
+    </span>
+
+    {onRemove && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(place.id, timeSlot);
+        }}
+        className="text-red-700 hover:underline"
+      >
+        Remove from My Itinerary
+      </button>
+    )}
+  </div>
+)}
 
           {/* ───── Action buttons (Save / Itinerary) ───── */}
-          <div className="absolute right-0 top-0 flex flex-col items-end space-y-1.5">
-            {onSave && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();        // keep card click intact
-                  onSave(place);
-                }}
-                className={
-                  saved
-                    ? `${baseBtn} bg-red-100 text-red-700 hover:bg-red-200`
-                    : `${baseBtn} bg-[#022c44] text-white hover:bg-[#022c44]/90`
-                }
-              >
-                {saved ? 'Remove from Saved Places' : 'Add to Saved Places'}
-              </button>
-            )}
+          {(onSave || (!onRemove && !hideItinerary)) && (
+            <div className="absolute right-0 top-0 flex flex-col items-end space-y-1.5">
+              {onSave && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // keep card click intact
+                    onSave(place);
+                  }}
+                  className={
+                    saved
+                      ? `${baseBtn} bg-red-100 text-red-700 hover:bg-red-200`
+                      : `${baseBtn} bg-[#022c44] text-white hover:bg-[#022c44]/90`
+                  }
+                >
+                  {saved ? 'Remove from Saved Places' : 'Add to Saved Places'}
+                </button>
+              )}
 
-            {/* ---- Itinerary ---- */}
-            {onRemove ? (
-              /* We're on the My‑Itinerary page */
-              <button
-                onClick={e => {
-                  e.stopPropagation();
-                  onRemove(place.id, timeSlot);
-                }}
-                className={`${baseBtn} bg-red-100 text-red-700 hover:bg-red-200`}
-              >
-                Remove&nbsp;from&nbsp;My&nbsp;Itinerary
-              </button>
-            ) : (
-              !hideItinerary && (
+              {/* ---- Itinerary (Add) ---- */}
+              {!onRemove && !hideItinerary && (
                 timeSlot ? (
                   /* Already added – show label instead of dropdown */
                   <button className={`${ghostBtn} cursor-default`} disabled>
@@ -166,10 +203,10 @@ export default function PlaceCard({
                             x
                           </button>
                         </div>
-                        {TIMES.map(t => (
+                        {TIMES.map((t) => (
                           <button
                             key={t}
-                            onClick={e => {
+                            onClick={(e) => {
                               e.stopPropagation();
                               onAdd(place.id, t);
                               setOpenMenu(false);
@@ -183,9 +220,9 @@ export default function PlaceCard({
                     )}
                   </div>
                 )
-              )
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
