@@ -50,7 +50,7 @@ export default function MyItinerary() {
   const [infoPlace, setInfoPlace] = useState<Place | null>(null);
 
   const left = (
-    <div className="space-y-6 pr-1">
+    <div className="space-y-2 pr-1">
       {SLOTS.map(slot => {
         const places = entries.filter(e => e.time === slot).map(e => e.place);
         if (places.length === 0) return null;
