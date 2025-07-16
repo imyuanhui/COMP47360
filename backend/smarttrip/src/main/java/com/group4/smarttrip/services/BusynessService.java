@@ -68,9 +68,9 @@ public class BusynessService {
         double busynessScore = predictBusyness(zone, weather, time);
 
         String busynessLevel = "undefined";
-        if (busynessScore <= 2000) {
+        if (busynessScore <= 1590.07) {
             busynessLevel = "low";
-        } else if (busynessScore <= 5000) {
+        } else if (busynessScore <= 4152) {
             busynessLevel = "med";
         } else {
             busynessLevel = "high";
