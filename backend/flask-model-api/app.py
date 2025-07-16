@@ -5,7 +5,7 @@ from linear import linear_predict
 from map_openweather_to_coco import map_openweather_to_coco
 from datetime import datetime
 from rf_predict import random_forest
-from fetch_interest import fetch_interest
+from fetch_interest import fetch_interest, get_cached_interest
 
 app = Flask(__name__)
 
@@ -60,8 +60,9 @@ def predict_randomforest():
         prcp = weather.get("prcp")
 
         print(f"[INFO] Received prediction request for zone_id={zone_id}, zone_name='{zone_name}'")
-
-        interest = fetch_interest(zone_name)
+#ADD
+        # interest = fetch_interest(zone_name)
+        interest = get_cached_interest(zone_name)
         score = random_forest(timestamp, zone_id, temp, prcp, interest)
 
         return jsonify({"busyness_score": round(score, 2)})
