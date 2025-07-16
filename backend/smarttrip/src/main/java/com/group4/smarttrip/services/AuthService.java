@@ -7,6 +7,7 @@ import com.group4.smarttrip.repositories.UserRepository;
 import com.group4.smarttrip.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -67,5 +68,47 @@ public class AuthService {
         String newAccessToken = jwtUtil.generateToken(id);
 
         return Map.of("accessToken", newAccessToken);
+    }
+
+    public Map<String, ?> loginWithGoogle(OAuth2User oAuth2User) {
+        String email = oAuth2User.getAttribute("email");
+        String name = oAuth2User.getAttribute("name");
+        String providerUserId = oAuth2User.getAttribute("sub"); // Google's unique user ID
+        String picture = oAuth2User.getAttribute("picture");
+
+        User user = userRepository.findByEmail(email)
+                .filter(u -> u.getProvider().equals("google") || u.getProvider().equals("local")) // handle re-linking if needed
+                .orElseGet(() -> {
+                    // Create new user for Google account
+                    User newUser = User.builder()
+                            .email(email)
+                            .username(generateUniqueUsernameFromEmail(email))
+                            .provider("google")
+                            .providerUserId(providerUserId)
+                            .profilePhotoUrl(picture)
+                            .emailVerified(true)
+                            .build();
+                    return userRepository.save(newUser);
+                });
+
+        String accessToken = jwtUtil.generateToken(user.getId());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+        UserDto userDto = userMapper.toDto(user);
+
+        return Map.of(
+                "accessToken", accessToken,
+                "refreshToken", refreshToken,
+                "user", userDto
+        );
+    }
+
+    private String generateUniqueUsernameFromEmail(String email) {
+        String baseUsername = email.split("@")[0];
+        String username = baseUsername;
+        int suffix = 1;
+        while (userRepository.existsByUsername(username)) {
+            username = baseUsername + suffix++;
+        }
+        return username;
     }
 }

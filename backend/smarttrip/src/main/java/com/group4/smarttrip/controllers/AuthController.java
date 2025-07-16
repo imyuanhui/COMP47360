@@ -8,6 +8,7 @@ import com.group4.smarttrip.services.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -53,6 +54,18 @@ public class AuthController {
 
         try {
             var response = authService.refreshToken(request.get("refreshToken"));
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Google OAuth callback
+    @GetMapping("/oauth2/callback/google")
+    public ResponseEntity<?> handleGoogleLogin(@AuthenticationPrincipal OAuth2User oAuth2User) {
+        try {
+            var response = authService.loginWithGoogle(oAuth2User);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
