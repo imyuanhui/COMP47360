@@ -1,6 +1,5 @@
 package com.group4.smarttrip.controllers;
 
-
 import com.group4.smarttrip.dtos.LoginUserRequest;
 import com.group4.smarttrip.dtos.RegisterUserRequest;
 import com.group4.smarttrip.mappers.UserMapper;
@@ -102,7 +101,7 @@ public class AuthController {
         response.addCookie(refreshTokenCookie);
 
         // Redirect to frontend
-        response.sendRedirect("https://smarttrip.duckdns.org/dashboard");
+        response.sendRedirect("https://smarttrip.duckdns.org/oauth-success");
     }
 
 }
