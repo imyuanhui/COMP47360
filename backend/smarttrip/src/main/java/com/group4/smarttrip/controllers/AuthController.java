@@ -83,7 +83,7 @@ public class AuthController {
         var loginResult = authService.loginWithGoogle(oAuth2User);
         String accessToken = (String) loginResult.get("accessToken");
 
-        // 重定向到前端页面并附带 token
+        
         String frontendRedirectUrl = "https://smarttrip.duckdns.org/oauth2/redirect?token=" + accessToken;
         response.sendRedirect(frontendRedirectUrl);
     } catch (RuntimeException e) {

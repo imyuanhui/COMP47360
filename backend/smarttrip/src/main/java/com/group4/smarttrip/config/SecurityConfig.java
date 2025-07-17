@@ -25,8 +25,9 @@ public class SecurityConfig {
 //                        .requestMatchers("/api/auth/register", "/api/auth/login", "/").permitAll()
 //                        .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults()); // Optional: if you're not using JWT filter yet
-
+                // .httpBasic(Customizer.withDefaults()); // Optional: if you're not using JWT filter yet
+                .httpBasic(Customizer.withDefaults())
+                .oauth2Login(Customizer.withDefaults()); // Optional: if you're not using JWT filter yet
         return http.build();
     }
 }

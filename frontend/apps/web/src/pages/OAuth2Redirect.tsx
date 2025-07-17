@@ -9,10 +9,10 @@ export default function OAuth2Redirect() {
     const token = params.get("token");
 
     if (token) {
-      localStorage.setItem("token", token); 
-      navigate("/dashboard"); 
+      localStorage.setItem("token", token);
+      navigate("/dashboard");
     } else {
-      navigate("/?error=oauth"); 
+      navigate("/?error=oauth");
     }
   }, []);
 
