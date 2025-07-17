@@ -76,19 +76,19 @@ public class AuthController {
     //                 .body(Map.of("error", e.getMessage()));
     //     }
     // }
-    @GetMapping("/oauth2/callback/google")
-    public void handleGoogleLogin(@AuthenticationPrincipal OAuth2User oAuth2User,
-                              HttpServletResponse response) throws IOException {
-    try {
-        var loginResult = authService.loginWithGoogle(oAuth2User);
-        String accessToken = (String) loginResult.get("accessToken");
+//     @GetMapping("/oauth2/callback/google")
+//     public void handleGoogleLogin(@AuthenticationPrincipal OAuth2User oAuth2User,
+//                               HttpServletResponse response) throws IOException {
+//     try {
+//         var loginResult = authService.loginWithGoogle(oAuth2User);
+//         String accessToken = (String) loginResult.get("accessToken");
 
         
-        String frontendRedirectUrl = "https://smarttrip.duckdns.org/oauth2/redirect?token=" + accessToken;
-        response.sendRedirect(frontendRedirectUrl);
-    } catch (RuntimeException e) {
-        response.sendRedirect("https://smarttrip.duckdns.org/oauth2/redirect?error=oauth");
-    }
-}
+//         String frontendRedirectUrl = "https://smarttrip.duckdns.org/oauth2/redirect?token=" + accessToken;
+//         response.sendRedirect(frontendRedirectUrl);
+//     } catch (RuntimeException e) {
+//         response.sendRedirect("https://smarttrip.duckdns.org/oauth2/redirect?error=oauth");
+//     }
+// }
 
 }

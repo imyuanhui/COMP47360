@@ -8,9 +8,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+import com.group4.smarttrip.services.AuthService;
+import lombok.RequiredArgsConstructor;
+
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final AuthService authService;
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -28,7 +33,15 @@ public class SecurityConfig {
                 // .httpBasic(Customizer.withDefaults()); // Optional: if you're not using JWT filter yet
                 .httpBasic(Customizer.withDefaults())
                 .oauth2Login(oauth -> oauth
-            .defaultSuccessUrl("/api/oauth2/callback/google", true)); // Optional: if you're not using JWT filter yet
+    .successHandler((request, response, authentication) -> {
+        var oauthUser = (org.springframework.security.oauth2.core.user.OAuth2User) authentication.getPrincipal();
+
+        
+        var result = authService.loginWithGoogle(oauthUser);
+        String accessToken = (String) result.get("accessToken");
+
+        response.sendRedirect("https://smarttrip.duckdns.org/oauth2/redirect?token=" + accessToken);
+    }));
         return http.build();
     }
 }

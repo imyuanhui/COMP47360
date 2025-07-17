@@ -111,4 +111,10 @@ public class AuthService {
         }
         return username;
     }
+
+    public String generateTokenByEmail(String email) {
+    User user = userRepository.findByEmail(email)
+                  .orElseThrow(() -> new RuntimeException("User not found"));
+    return jwtUtil.generateToken(user.getId());
+}
 }
