@@ -27,7 +27,8 @@ public class SecurityConfig {
                 )
                 // .httpBasic(Customizer.withDefaults()); // Optional: if you're not using JWT filter yet
                 .httpBasic(Customizer.withDefaults())
-                .oauth2Login(Customizer.withDefaults()); // Optional: if you're not using JWT filter yet
+                .oauth2Login(oauth -> oauth
+            .defaultSuccessUrl("/api/oauth2/callback/google", true)); // Optional: if you're not using JWT filter yet
         return http.build();
     }
 }
