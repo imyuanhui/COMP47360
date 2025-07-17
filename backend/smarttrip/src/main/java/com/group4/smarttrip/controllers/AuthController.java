@@ -5,17 +5,19 @@ import com.group4.smarttrip.dtos.LoginUserRequest;
 import com.group4.smarttrip.dtos.RegisterUserRequest;
 import com.group4.smarttrip.mappers.UserMapper;
 import com.group4.smarttrip.services.AuthService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
-import jakarta.servlet.http.Cookie;
-import java.io.IOException;
 
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -81,6 +83,18 @@ public class AuthController {
             @AuthenticationPrincipal OAuth2User oAuth2User,
             HttpServletResponse response) throws IOException {
 
+        Logger logger = LoggerFactory.getLogger(getClass());
+
+        if (oAuth2User == null) {
+            logger.error("OAuth2User is null — authentication not established.");
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "OAuth2User not found");
+            return;
+        }
+
+        // Log the full user attributes
+        logger.info("OAuth2User attributes: {}", oAuth2User.getAttributes());
+
+        // Login logic
         Map<String, ?> result = authService.loginWithGoogle(oAuth2User);
         String accessToken = (String) result.get("accessToken");
         String refreshToken = (String) result.get("refreshToken");
@@ -102,7 +116,7 @@ public class AuthController {
         response.addCookie(refreshTokenCookie);
 
         // Redirect to frontend
-        response.sendRedirect("https://smarttrip.duckdns.org/dashboard");
+        response.sendRedirect("http://smarttrip.duckdns.org/oauth-success");
     }
 
 }
