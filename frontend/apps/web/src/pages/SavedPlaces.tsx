@@ -73,7 +73,6 @@ const { saved, addPlace, removePlace, loading } = useSavedPlaces(tripId!);
               onAdd={() => {}}
               highlighted={highlightId === p.id}
               hideItinerary={true}
-              showRating={false}
             />
           </div>
         ))

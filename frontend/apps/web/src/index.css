@@ -51,3 +51,17 @@ body::-webkit-scrollbar {
   overflow: visible !important;
 }
 
+/* custom-checkbox.css */
+input[type='checkbox'].custom-blue:checked {
+  background-color: #022c44;
+  border-color: #022c44;
+}
+
+input[type='checkbox'].custom-blue {
+  accent-color: #022c44; /* fallback for modern browsers */
+}
+
+/* src/index.css or your Tailwind base layer */
+.gm-style-iw-c {
+  padding-top: 4px !important;   /* default ≈ 11 px */
+}

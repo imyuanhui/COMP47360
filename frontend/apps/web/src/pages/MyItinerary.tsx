@@ -1,3 +1,13 @@
+/**********************************************************************
+ * MyItinerary.tsx
+ * --------------------------------------------------------------------
+ * Displays a user’s itinerary for a specific trip.
+ * - Left pane: Places grouped by time slots
+ * - Right pane: Map with markers, popups, and remove-from-itinerary logic
+ * 
+ * This page is rendered when the user selects a trip to view/edit.
+ *********************************************************************/
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -7,18 +17,27 @@ import { useItinerary } from '../services/useItinerary';
 import { fetchTripDetails, setAuthToken } from '../services/api';
 import type { Place } from '../types';
 
+/* ---------- Constants ---------- */
 const SLOTS = Array.from({ length: 10 }, (_, i) =>
-  `${(9 + i).toString().padStart(2, '0')}:00`,
+  `${(9 + i).toString().padStart(2, '0')}:00`, // Generates time slots from 09:00 to 18:00
 );
 
-const DEFAULT_CENTRE: google.maps.LatLngLiteral = { lat: 40.7422, lng: -73.9880 };
+const DEFAULT_CENTRE: google.maps.LatLngLiteral = {
+  lat: 40.7422,
+  lng: -73.9880, // Default map center (Manhattan)
+};
 
+/* =================================================================== */
+/* Main Component                                                      */
+/* =================================================================== */
 export default function MyItinerary() {
-  const { tripId } = useParams();
+  const { tripId } = useParams(); // Get trip ID from route parameters
 
+  // Store trip name and date
   const [tripName, setTripName] = useState('Your Trip');
   const [tripDate, setTripDate] = useState('Date not set');
 
+  /* ---------- Load Trip Details ---------- */
   useEffect(() => {
     if (!tripId) return;
 
@@ -30,7 +49,9 @@ export default function MyItinerary() {
 
         const trip = await fetchTripDetails(tripId);
         setTripName(trip.basicInfo.tripName);
-        setTripDate(new Date(trip.basicInfo.startDateTime).toLocaleDateString());
+        setTripDate(
+          new Date(trip.basicInfo.startDateTime).toLocaleDateString()
+        );
       } catch (err) {
         console.error('Failed to fetch trip in MyItinerary:', err);
       }
@@ -41,34 +62,69 @@ export default function MyItinerary() {
 
   if (!tripId) return <div>Error: No trip selected.</div>;
 
-  const { entries, remove } = useItinerary(tripId);
-  
+  /* ---------- Itinerary State ---------- */
+  const { entries, remove } = useItinerary(tripId); // Custom hook to get/remove itinerary entries
 
-  const [focusCoord, setFocusCoord] = useState<google.maps.LatLngLiteral | null>(null);
-  const [mapZoom, setMapZoom] = useState(13);
-  const [highlightId, setHighlight] = useState<string | null>(null);
-  const [infoPlace, setInfoPlace] = useState<Place | null>(null);
+  const [focusCoord, setFocusCoord] = useState<google.maps.LatLngLiteral | null>(null); // Map focus
+  const [mapZoom, setMapZoom] = useState(13);                                            // Map zoom level
+  const [highlightId, setHighlight] = useState<string | null>(null);                    // Highlighted card
+  const [infoPlace, setInfoPlace] = useState<Place | null>(null);                       // Map popup state
 
+  /** Build a Google Maps directions URL for the current trip. */
+const buildMapsUrl = (): string | null => {
+  if (!entries.length) return null;
+
+  // Sort by time-slot order so 09:00 → 18:00 becomes origin → … → destination
+  const ordered = [...entries].sort(
+    (a, b) => SLOTS.indexOf(a.time) - SLOTS.indexOf(b.time),
+  );
+
+  // Google limits us to 10 way-points (origin + 8 waypoints + destination)
+  const coords = ordered.slice(0, 10).map(e => `${e.place.lat},${e.place.lng}`);
+
+  // 1 place → simple search; 2 + places → directions with waypoints
+  if (coords.length === 1) {
+    return `https://www.google.com/maps/search/?api=1&query=${coords[0]}`;
+  }
+
+  const origin      = coords[0];
+  const destination = coords[coords.length - 1];
+  const waypoints   = coords.slice(1, -1).join('|');      // pipe-delimited
+  const url = `https://www.google.com/maps/dir/?api=1`
+            + `&origin=${origin}`
+            + `&destination=${destination}`
+            + (waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : '')
+            + `&travelmode=walking`;                      // feel free to change
+  return url;
+};
+  /* ---------- Left Panel: Time-based Itinerary Cards ---------- */
   const left = (
     <div className="space-y-2 pr-1">
       {SLOTS.map(slot => {
-        const places = entries.filter(e => e.time === slot).map(e => e.place);
+        // Group places by their assigned time slot
+        const places = entries
+          .filter(e => e.time === slot)
+          .map(e => e.place);
+
         if (places.length === 0) return null;
 
         return (
           <section key={slot}>
+            {/* Time Slot Heading */}
             <div className="mb-4 text-center">
               <h4 className="text-lg font-semibold text-[#012b42]">{slot}</h4>
               <div className="mt-1 mx-auto w-1/2 border-b border-[#012b42]" />
             </div>
 
+            {/* Place Cards in this Time Slot */}
             <div className="space-y-4">
               {places.map(p => (
                 <div
                   key={p.id}
-                  onMouseEnter={() => setHighlight(p.id)}
+                  onMouseEnter={() => setHighlight(p.id)} // Highlight on hover
                   onMouseLeave={() => setHighlight(null)}
                   onClick={() => {
+                    // Zoom to marker and show info popup
                     setHighlight(p.id);
                     setFocusCoord({ lat: p.lat, lng: p.lng });
                     setMapZoom(15);
@@ -77,8 +133,8 @@ export default function MyItinerary() {
                 >
                   <PlaceCard
                     place={p}
-                    onAdd={() => {}}
-                    onRemove={() => remove(p.id, slot)}
+                    onAdd={() => {}} // not needed here
+                    onRemove={() => remove(p.id, slot)} // remove place from itinerary
                     saved
                     highlighted={highlightId === p.id}
                     hideItinerary={true}
@@ -90,6 +146,8 @@ export default function MyItinerary() {
           </section>
         );
       })}
+
+      {/* Empty itinerary message */}
       {entries.length === 0 && (
         <p className="mt-6 text-center text-gray-500">
           You haven't added anything yet - use “+ My Itinerary” on the Explore page.
@@ -98,31 +156,41 @@ export default function MyItinerary() {
     </div>
   );
 
+  /* ---------- Right Panel: Map and Interactions ---------- */
   const right = (
     <MapPane
-      places={entries.map(e => e.place)}
-      focusCoord={focusCoord ?? DEFAULT_CENTRE}
-      zoom={mapZoom}
-      infoPlace={infoPlace}
-      onInfoClose={() => setInfoPlace(null)}
+      places={entries.map(e => e.place)}            // All itinerary places as markers
+      focusCoord={focusCoord ?? DEFAULT_CENTRE}     // Focus on selected or default
+      zoom={mapZoom}                                // Zoom level
+      infoPlace={infoPlace}                         // Current popup place
+      onInfoClose={() => setInfoPlace(null)}        // Close popup
       onMarkerClick={p => {
+        // Show info when marker clicked
         setHighlight(p.id);
         setFocusCoord({ lat: p.lat, lng: p.lng });
         setMapZoom(15);
         setInfoPlace(p);
       }}
+
+      // Remove button inside InfoWindow
+      // onRemoveFromItinerary={(place: Place) => {
+      //   const entry = entries.find(e => e.place.id === place.id);
+      //   if (entry) remove(place.id, entry.time);
+      //   setInfoPlace(null); // Close popup after deletion
+      // }}
     />
   );
 
+  /* ---------- Render Layout ---------- */
   return (
     <Layout
       activeTab="My Itinerary"
       tripId={tripId}
       tripName={tripName}
       tripDate={tripDate}
-      left={left}
-      right={right}
-      heroCollapsed={true}
+      left={left}             // Place list view
+      right={right}           // Map view
+      heroCollapsed={true}    // Collapsed banner layout
     />
   );
 }
