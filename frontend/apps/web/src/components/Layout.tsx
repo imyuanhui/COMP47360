@@ -69,7 +69,7 @@ export default function Layout({
           </Link>
 
           {/* quick links (no routing library needed) */}
-          <div className="space-x-4 text-sm text-gray-600">
+          <div className="space-x-4 text-sm">
             <button onClick={() => navigate('/dashboard')}   className="hover:underline">Dashboard</button>
             <button onClick={() => navigate('/')}          className="hover:underline">Logout</button>
           </div>
