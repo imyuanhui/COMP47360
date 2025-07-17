@@ -77,7 +77,7 @@ public class AuthController {
     //                 .body(Map.of("error", e.getMessage()));
     //     }
     // }
-    @GetMapping("/oauth2/callback/google")
+    @GetMapping("/oauth2/code/google")
     public void handleGoogleLogin(
             @AuthenticationPrincipal OAuth2User oAuth2User,
             HttpServletResponse response) throws IOException {

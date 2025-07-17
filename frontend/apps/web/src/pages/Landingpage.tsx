@@ -263,7 +263,7 @@ export default function LandingPage() {
             <button
               onClick={() => {
                 window.location.href =
-                  "https://smarttrip.duckdns.org/oauth2/authorization/google";
+                  "https://smarttrip.duckdns.org/api/oauth2/authorization/google";
               }}
               className="w-full border border-gray-300 py-2 rounded text-sm flex items-center justify-center gap-2 mb-4"
             >
@@ -333,7 +333,7 @@ export default function LandingPage() {
             <button
               onClick={() => {
                 window.location.href =
-                  "https://smarttrip.duckdns.org/oauth2/authorization/google";
+                  "https://smarttrip.duckdns.org/api/oauth2/authorization/google";
               }}
               className="w-full border border-gray-300 py-2 rounded text-sm flex items-center justify-center gap-2 mb-4"
             >
