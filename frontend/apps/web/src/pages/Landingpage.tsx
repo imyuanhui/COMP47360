@@ -329,7 +329,7 @@ export default function LandingPage() {
             >
               Create Account
             </button>
-
+    
             <button
               onClick={() => {
                 window.location.href =

@@ -112,15 +112,13 @@ export default function ExplorePlaces() {
 
     const fetch = filters.length
       ? searchText('tourist attraction', DEFAULT_CENTRE, filters, MANHATTAN_RADIUS)
-          .then(r => [...r].sort(() => Math.random() - 0.5).slice(0, 10))
+        .then(r => [...r].sort(() => Math.random() - 0.5).slice(0, 20))
       : fetchRandomPlaces(DEFAULT_CENTRE, MANHATTAN_RADIUS);
 
     fetch
       .then(r => {
         setRecommended(r);
-        if (!searchResults.length && r[0]) {
-          setFocusCoord({ lat: r[0].lat, lng: r[0].lng });
-        }
+        
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -350,7 +348,7 @@ export default function ExplorePlaces() {
   const right = (
     <MapPane
       places={combined}
-      focusCoord={focusCoord}
+      focusCoord={focusCoord ?? DEFAULT_CENTRE}
       zoom={mapZoom}
       infoPlace={infoPlace}
       onInfoClose={() => setInfoPlace(null)}
