@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast'; 
+import OAuth2Redirect from './pages/OAuth2Redirect';
 
 // Page Imports
 import LandingPage from './pages/Landingpage';
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/saved/:tripId" element={<SavedPlaces />} />
 
         <Route path="/preferences" element={<Preferences />} />
+        <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
