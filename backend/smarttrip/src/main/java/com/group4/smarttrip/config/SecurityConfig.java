@@ -31,43 +31,34 @@ public class SecurityConfig {
 //        return http.build();
 //    }
 
-    @Configuration
-    public class SecurityConfig {
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable())
 
-        @Bean
-        public PasswordEncoder passwordEncoder() {
-            return new BCryptPasswordEncoder();
-        }
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/api/**",
+                                "/oauth2/**",
+                                "/login/**",
+                                "/error"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
 
-        @Bean
-        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-            http
-                    .csrf(csrf -> csrf.disable())
+                .httpBasic(Customizer.withDefaults())
 
-                    .authorizeHttpRequests(auth -> auth
-                            .requestMatchers(
-                                    "/api/**",
-                                    "/oauth2/**",
-                                    "/login/**",
-                                    "/error"
-                            ).permitAll()
-                            .anyRequest().authenticated()
-                    )
+                // Enable OAuth2 login (DO NOT set defaultSuccessUrl here!)
+                .oauth2Login(oauth -> oauth
+                        // Let Spring use the redirect-uri from application.properties
+                        .successHandler((request, response, authentication) -> {
+                            // Instead of redirecting here, delegate to your controller
+                            response.sendRedirect("/api/oauth2/callback/google");
+                        })
+                );
 
-                    .httpBasic(Customizer.withDefaults())
-
-                    // Enable OAuth2 login (DO NOT set defaultSuccessUrl here!)
-                    .oauth2Login(oauth -> oauth
-                            // Let Spring use the redirect-uri from application.properties
-                            .successHandler((request, response, authentication) -> {
-                                // Instead of redirecting here, delegate to your controller
-                                response.sendRedirect("/api/oauth2/callback/google");
-                            })
-                    );
-
-            return http.build();
-        }
+        return http.build();
     }
 
-
 }
+

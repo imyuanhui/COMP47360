@@ -5,6 +5,7 @@ import com.group4.smarttrip.dtos.LoginUserRequest;
 import com.group4.smarttrip.dtos.RegisterUserRequest;
 import com.group4.smarttrip.mappers.UserMapper;
 import com.group4.smarttrip.services.AuthService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
+import jakarta.servlet.http.Cookie;
+import java.io.IOException;
 
 import java.util.Map;
 
@@ -64,13 +67,32 @@ public class AuthController {
 
     // Google OAuth callback
     @GetMapping("/oauth2/callback/google")
-    public ResponseEntity<?> handleGoogleLogin(@AuthenticationPrincipal OAuth2User oAuth2User) {
-        try {
-            var response = authService.loginWithGoogle(oAuth2User);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", e.getMessage()));
-        }
+    public void handleGoogleLogin(
+            @AuthenticationPrincipal OAuth2User oAuth2User,
+            HttpServletResponse response) throws IOException {
+
+        Map<String, ?> result = authService.loginWithGoogle(oAuth2User);
+        String accessToken = (String) result.get("accessToken");
+        String refreshToken = (String) result.get("refreshToken");
+
+        // Set JWT as HttpOnly cookies
+        Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(true); // required for HTTPS
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(15 * 60); // 15 minutes
+
+        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
+
+        response.addCookie(accessTokenCookie);
+        response.addCookie(refreshTokenCookie);
+
+        // Redirect to frontend
+        response.sendRedirect("https://smarttrip.duckdns.org/dashboard");
     }
+
 }
