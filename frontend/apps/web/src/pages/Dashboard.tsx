@@ -502,14 +502,22 @@ const endDateTime = `${dateStr}T23:59:00`;
     <img src="/assets/logo.jpg" alt="Logo" className="h-8 w-8" />
     <h1 className="text-2xl font-bold text-[#03253D]">SmartTrip NYC</h1>
   </div>
-  <div className="space-x-4">
-    <button onClick={() => setShowProfile(true)} className="text-gray-600 hover:text-gray-800">
-      Profile
-    </button>
-    <button onClick={handleLogout} disabled={loggingOut} className="text-gray-600 hover:text-red-600">
-      {loggingOut ? "Logging out..." : "Logout"}
-    </button>
-  </div>
+ <div className="flex items-center gap-6 text-sm">
+  <button
+    onClick={() => setShowProfile(true)}
+    className="hover:text-blue-600 transition"
+  >
+    Profile
+  </button>
+  <button
+    onClick={handleLogout}
+    disabled={loggingOut}
+    className="hover:text-blue-600 transition"
+  >
+    {loggingOut ? "Logging out..." : "Logout"}
+  </button>
+</div>
+
 </header>
       {/* Plan a new trip */}
       <div className="flex justify-end mb-6">
