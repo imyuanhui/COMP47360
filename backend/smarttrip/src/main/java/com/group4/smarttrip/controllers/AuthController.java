@@ -66,7 +66,17 @@ public class AuthController {
     }
 
     // Google OAuth callback
-    @GetMapping("/oauth2/callback/google")
+    // @GetMapping("/oauth2/callback/google")
+    // public ResponseEntity<?> handleGoogleLogin(@AuthenticationPrincipal OAuth2User oAuth2User) {
+    //     try {
+    //         var response = authService.loginWithGoogle(oAuth2User);
+    //         return ResponseEntity.ok(response);
+    //     } catch (RuntimeException e) {
+    //         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+    //                 .body(Map.of("error", e.getMessage()));
+    //     }
+    // }
+    @GetMapping("/oauth2/code/google")
     public void handleGoogleLogin(
             @AuthenticationPrincipal OAuth2User oAuth2User,
             HttpServletResponse response) throws IOException {

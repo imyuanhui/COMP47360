@@ -260,8 +260,11 @@ export default function LandingPage() {
             >
               Continue
             </button>
-            <a
-              href="https://smarttrip.duckdns.org/oauth2/authorize/google"
+            <button
+              onClick={() => {
+                window.location.href =
+                  "https://smarttrip.duckdns.org/oauth2/authorization/google";
+              }}
               className="w-full border border-gray-300 py-2 rounded text-sm flex items-center justify-center gap-2 mb-4"
             >
               <img
@@ -325,7 +328,14 @@ export default function LandingPage() {
             >
               Create Account
             </button>
-            <button className="w-full border border-gray-300 py-2 rounded text-sm flex items-center justify-center gap-2 mb-4">
+    
+            <button
+              onClick={() => {
+                window.location.href =
+                  "https://smarttrip.duckdns.org/oauth2/authorization/google";
+              }}
+              className="w-full border border-gray-300 py-2 rounded text-sm flex items-center justify-center gap-2 mb-4"
+            >
               <img
                 src="/assets/google-icon.png"
                 className="w-5 h-5"

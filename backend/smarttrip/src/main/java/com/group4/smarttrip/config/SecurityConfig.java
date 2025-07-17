@@ -53,7 +53,7 @@ public class SecurityConfig {
                         // Let Spring use the redirect-uri from application.properties
                         .successHandler((request, response, authentication) -> {
                             // Instead of redirecting here, delegate to your controller
-                            response.sendRedirect("/api/oauth2/callback/google");
+                            response.sendRedirect("/api/oauth2/code/google");
                         })
                 );
 
