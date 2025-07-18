@@ -11,6 +11,7 @@ import ExplorePlaces from './pages/ExplorePlaces';
 import MyItinerary from './pages/MyItinerary';
 import SavedPlaces from './pages/SavedPlaces';
 import Preferences from './pages/Preferences';
+import OAuth2Redirect from 'pages/Oauth';
 
 export default function App() {
   return (
@@ -34,7 +35,7 @@ export default function App() {
 
         <Route path="/itinerary" element={<MyItinerary />} />
         <Route path="/saved/:tripId" element={<SavedPlaces />} />
-
+        <Route path="/oauth-success" element={<OAuth2Redirect />} />
         <Route path="/preferences" element={<Preferences />} />
         <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
         <Route path="*" element={<Navigate to="/" replace />} />
