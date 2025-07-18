@@ -39,7 +39,7 @@ public class OauthController {
         String refreshToken = (String) result.get("refreshToken");
 
         // Redirect to frontend with tokens as query params
-        String redirectUrl = "https://smarttrip.duckdns.org/oauth-success"
+        String redirectUrl = "http://localhost:5173/oauth-success"
                 + "?accessToken=" + URLEncoder.encode(accessToken, StandardCharsets.UTF_8)
                 + "&refreshToken=" + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8);
 
