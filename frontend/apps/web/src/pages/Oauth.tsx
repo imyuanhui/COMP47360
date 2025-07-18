@@ -9,10 +9,13 @@ export default function OAuth2Redirect() {
     const accessToken = params.get("accessToken");
     const refreshToken = params.get("refreshToken");
 
+    console.log(accessToken, refreshToken)
+
     if (accessToken && refreshToken) {
       // Store tokens in localStorage for header-based auth
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
+      localStorage.setItem("token", accessToken);
 
       // Optional: clean up URL after storing
       window.history.replaceState({}, "", "/dashboard");
