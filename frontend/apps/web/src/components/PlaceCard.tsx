@@ -1,14 +1,20 @@
 /**********************************************************************
- * PlaceCard.tsx  — v4
+ * PlaceCard.tsx  — v5
  * --------------------------------------------------------------------
  * Card UI component that displays a Place’s details and interaction
  * options:
  *   • Add/Remove to My Itinerary (with time-picker dropdown)
  *   • Save / Remove from Saved Places
  *   • Show predicted busyness (memoised via useBusyness)
- *   • NEW: Export to Google Maps (opens selected place in Google Maps)
- *          — now includes Google logo icon (google-icon.png)
- *   • Remove from itinerary (if already added)
+ *   • Export to Google Maps (opens selected place in Google Maps)
+ *
+ * NOTE: Clicking on the card itself now **no longer** opens Google Maps.
+ *       Instead, opening in Google Maps is fully delegated to the explicit
+ *       "Export to Google Maps" button, which is rendered only when
+ *       `hideItinerary` is `true` (i.e. in My Itinerary and Saved Places
+ *       contexts). This restores the expected behaviour where clicking
+ *       the card merely selects / zooms the place on the in‑app map,
+ *       as handled by the parent wrapper component.
  *********************************************************************/
 
 import React, { useState, useEffect } from 'react';
@@ -70,10 +76,11 @@ export default function PlaceCard({
   /* -------------------- Render Card -------------------- */
   return (
     <div
-      className={`p-4 rounded-lg border shadow-sm transition-colors ${
-        highlighted ? 'border-blue-500' : 'border-gray-400'
-      }`}
-      onClick={() => hideItinerary && window.open(mapsUrl, '_blank')}
+      className={`
+        p-4 rounded-lg border shadow-sm transition-colors cursor-pointer
+        ${highlighted ? 'border-blue-500' : 'border-gray-400'}
+      `}
+      /* Intentionally no onClick handler here – parent handles map focus */
     >
       <div className="flex">
         {/* ---------- Place Image ---------- */}
@@ -157,7 +164,7 @@ export default function PlaceCard({
                 lg:w-auto lg:items-end
               "
             >
-              {/* ---Export to Google Maps button (visible only in My Itinerary cards)--- */}
+              {/* ---Export to Google Maps button (visible only in My Itinerary & Saved Places)--- */}
               {hideItinerary && (
                 <a
                   href={mapsUrl}

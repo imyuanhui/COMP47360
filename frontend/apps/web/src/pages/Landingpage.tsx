@@ -274,7 +274,6 @@ export default function LandingPage() {
               />
               Continue with Google
             </button>
-
             <p className="text-sm text-center">
               Don't have an account?{" "}
               <button

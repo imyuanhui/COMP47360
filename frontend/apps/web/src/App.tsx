@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast'; 
+// import OAuth2Redirect from './pages/OAuth2Redirect';
 
 // Page Imports
 import LandingPage from './pages/Landingpage';
@@ -10,7 +11,7 @@ import ExplorePlaces from './pages/ExplorePlaces';
 import MyItinerary from './pages/MyItinerary';
 import SavedPlaces from './pages/SavedPlaces';
 import Preferences from './pages/Preferences';
-import OAuth2Redirect from './pages/OAuth2Redirect';
+import OAuth2Redirect from 'pages/Oauth';
 
 export default function App() {
   return (
@@ -34,9 +35,9 @@ export default function App() {
 
         <Route path="/itinerary" element={<MyItinerary />} />
         <Route path="/saved/:tripId" element={<SavedPlaces />} />
-
+        <Route path="/oauth-success" element={<OAuth2Redirect />} />
         <Route path="/preferences" element={<Preferences />} />
-        <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
+        {/* <Route path="/oauth2/redirect" element={<OAuth2Redirect />} /> */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
