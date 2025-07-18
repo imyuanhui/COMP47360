@@ -200,43 +200,48 @@ export default function ExplorePlaces() {
   const left = (
     /* Collapse hero banner on first hover */
     <div onMouseEnter={handleCardHover}>
-      <SearchBar
-        onSearch={setQuery}
-        onPlaceSelect={pr => {
-          const loc = pr.geometry?.location;
-          if (!loc) return;
-          setFocusCoord({ lat: loc.lat(), lng: loc.lng() });
-          setMapZoom(15);
-          setInfoPlace({
-            id: pr.place_id || '',
-            name: pr.name || '',
-            address: pr.formatted_address || '',
-            lat: loc.lat(),
-            lng: loc.lng(),
-            imageUrl: '',
-            rating: 0,
-            crowdTime: '',
-            visitTime: '',
-            travel: { walk: 0, drive: 0, transit: 0 },
-          });
-        }}
-      />
-  
-      {/* + Filter button */}
+      <div className="flex items-center gap-2 mb-4">
+      
       <button
         disabled={loading}
         onClick={() => {
           setDraftFilters(filters);
           setShowModal(true);
         }}
-        className={`mb-4 rounded-[10px] px-3 py-1 transition-colors disabled:opacity-50 ${
+        className={`h-[42px] rounded-[10px] px-3 py-1 transition-colors disabled:opacity-50 whitespace-nowrap ${
           showModal
             ? 'bg-white text-[#022c44] border border-[#022c44]'
-            : 'bg-[#022c44] text-white border border-transparent hover:bg-[#022c44]/90'
+            : 'bg-[#022c44] text-white text-sm border border-transparent hover:bg-[#022c44]/90'
         }`}
       >
-        + Filter
+        Filter Search
       </button>
+
+      <div className="flex-1">
+        <SearchBar
+          onSearch={setQuery}
+          onPlaceSelect={pr => {
+            const loc = pr.geometry?.location;
+            if (!loc) return;
+            setFocusCoord({ lat: loc.lat(), lng: loc.lng() });
+            setMapZoom(15);
+            setInfoPlace({
+              id: pr.place_id || '',
+              name: pr.name || '',
+              address: pr.formatted_address || '',
+              lat: loc.lat(),
+              lng: loc.lng(),
+              imageUrl: '',
+              rating: 0,
+              crowdTime: '',
+              visitTime: '',
+              travel: { walk: 0, drive: 0, transit: 0 },
+            });
+          }}
+        />
+      </div>
+         
+   </div>
   
       {loadError && (
         <p className="mt-4 text-center text-red-600">

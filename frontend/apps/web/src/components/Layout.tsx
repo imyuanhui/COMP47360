@@ -111,7 +111,7 @@ export default function Layout({
 
           {/* 3️⃣  Tab navigation */}
           <nav className="relative z-20 bg-white">
-            <ul className="flex space-x-8 px-6 pt-0 pb-2 text-base">
+          <ul className="flex space-x-8 px-6 pt-0 pb-2 text-sm md:text-base">
               {tabs.map(t => (
                 <li key={t.label}>
                   <Link

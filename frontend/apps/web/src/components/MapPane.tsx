@@ -42,21 +42,28 @@ const mapStyles: google.maps.MapTypeStyle[] = [
 /* ------------------------------------------------------------------ */
 function markerIcon(level: string, size = 40): google.maps.Icon {
   const colour =
-    level === 'low'  ? '#0d9488' :
-    level === 'med'  ? '#f59e0b' :
-    level === 'high' ? '#9333ea' : '#9ca3af';
+    level === 'low'  ? '#6590f6' :
+    level === 'med'  ? '#f4b241' :
+    level === 'high' ? '#cc397c' : '#9ca3af';
 
   const label  =
     level === 'low'  ? 'L' :
     level === 'med'  ? 'M' :
     level === 'high' ? 'H' : 'U';
 
-  const svg = `
+    const svg = `
     <svg width="${size}" height="${size + 6}" viewBox="0 0 40 46" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="20" cy="20" r="16" fill="${colour}" stroke="#ffffff" stroke-width="2"/>
-      <path d="M16 32 L24 32 L20 38 Z" fill="${colour}"/>
-      <text x="20" y="25" font-size="14" font-family="Arial" font-weight="bold"
-            text-anchor="middle" fill="#ffffff">${label}</text>
+      <circle cx="20" cy="20" r="14" fill="${colour}" stroke="#022c44" stroke-width="1.5"/>
+      
+      <!-- Triangle fill -->
+      <path d="M16 32 L24 32 L20 40 Z" fill="${colour}"/>
+  
+      <!-- Side strokes only (left and right) -->
+      <line x1="16" y1="32" x2="20" y2="40" stroke="#022c44" stroke-width="1.5"/>
+      <line x1="24" y1="32" x2="20" y2="40" stroke="#022c44" stroke-width="1.5"/>
+      
+      <text x="20" y="25" font-size="12" font-family="Arial" font-weight="bold"
+            text-anchor="middle" fill="#022c44">${label}</text>
     </svg>
   `;
 
@@ -204,10 +211,10 @@ export default function MapPane({
             <span
                 className={`capitalize font-semibold ${
                   lvl === 'high'
-                    ? 'text-purple-600'
-                    : lvl === 'med'
-                    ? 'text-amber-500'
-                    : 'text-teal-600'
+                  ? 'text-customPink'
+                  : lvl === 'med'
+                  ? 'text-customAmber'
+                  : 'text-customTeal'
                 }`}
               >
               {lvl}
@@ -258,9 +265,9 @@ export default function MapPane({
                   {(() => {
                   const level = withLevels.find(p => p.id === infoPlace.id)?.busynessLevel;
                   let levelClass = '';
-                  if (level === 'low') levelClass = 'text-green-600 font-bold';
-                  else if (level === 'med') levelClass = 'text-orange-500 font-bold';
-                  else if (level === 'high') levelClass = 'text-red-600 font-bold';
+                  if (level === 'low') levelClass = 'text-customTeal font-bold';
+                  else if (level === 'med') levelClass = 'text-customAmber font-bold';
+                  else if (level === 'high') levelClass = 'text-customPink font-bold';
 
                   return (
                     <p className="text-xs text-gray-600">
