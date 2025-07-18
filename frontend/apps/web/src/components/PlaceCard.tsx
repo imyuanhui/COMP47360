@@ -87,7 +87,7 @@ export default function PlaceCard({
         <img
           src={place.imageUrl || '/placeholder.jpg'}
           alt={place.name}
-          className="mr-4 h-24 w-24 flex-shrink-0 rounded-lg object-cover"
+          className="mr-4 min-h-24 h-auto w-24 flex-shrink-0 rounded-lg object-cover"
         />
 
         {/* ---------- Content Area ---------- */}
@@ -140,9 +140,9 @@ export default function PlaceCard({
                 {busynessLevel ? (
                   <span
                     className={`font-bold ${
-                      busynessLevel === 'low'  ? 'text-green-600' :
-                      busynessLevel === 'med'  ? 'text-orange-500' :
-                      busynessLevel === 'high' ? 'text-red-600' : ''
+                      busynessLevel === 'low'  ? 'text-customTeal' :
+                      busynessLevel === 'med'  ? 'text-customAmber':
+                      busynessLevel === 'high' ? 'text-customPink' : ''
                     }`}
                   >
                     {busynessLevel}
