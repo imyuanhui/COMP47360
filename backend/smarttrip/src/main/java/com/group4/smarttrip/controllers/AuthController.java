@@ -18,6 +18,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+<<<<<<< HEAD
+=======
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+>>>>>>> 37bd93637bdbff86d2c15c1739b7f5b8672b8e35
 import java.util.Map;
 
 @RestController
@@ -67,17 +72,7 @@ public class AuthController {
         }
     }
 
-    // Google OAuth callback
-    // @GetMapping("/oauth2/callback/google")
-    // public ResponseEntity<?> handleGoogleLogin(@AuthenticationPrincipal OAuth2User oAuth2User) {
-    //     try {
-    //         var response = authService.loginWithGoogle(oAuth2User);
-    //         return ResponseEntity.ok(response);
-    //     } catch (RuntimeException e) {
-    //         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-    //                 .body(Map.of("error", e.getMessage()));
-    //     }
-    // }
+
     @GetMapping("/oauth2/code/google")
     public void handleGoogleLogin(
             @AuthenticationPrincipal OAuth2User oAuth2User,
@@ -99,24 +94,10 @@ public class AuthController {
         String accessToken = (String) result.get("accessToken");
         String refreshToken = (String) result.get("refreshToken");
 
-        // Set JWT as HttpOnly cookies
-        Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
-        accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(true); // required for HTTPS
-        accessTokenCookie.setPath("/");
-        accessTokenCookie.setMaxAge(15 * 60); // 15 minutes
-
-        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
-        refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(true);
-        refreshTokenCookie.setPath("/");
-        refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
-
-        response.addCookie(accessTokenCookie);
-        response.addCookie(refreshTokenCookie);
-
-        // Redirect to frontend
-        response.sendRedirect("http://smarttrip.duckdns.org/oauth-success");
+        // Build redirect URL for frontend OAuth2Redirect page
+        String redirectUrl = "https://smarttrip.duckdns.org/oauth-success" +
+                "?accessToken=" + URLEncoder.encode(accessToken, StandardCharsets.UTF_8) +
+                "&refreshToken=" + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8);
     }
 
 }
