@@ -112,7 +112,7 @@ const handleSmartSubmit = async () => {
   }
 
   try {
-    setLoading(true); // Show loader
+    setLoading(true);
 
     const token = localStorage.getItem("token");
     if (!token) {
@@ -135,18 +135,29 @@ const handleSmartSubmit = async () => {
       throw new Error(data.message || "Failed to generate smart itinerary");
     }
 
-  toast.success("Smart itinerary created!");
-setShowSmartModal(false);
+    const tripId = data.basicInfo.tripId;
+    const tripName = data.basicInfo.tripName;
+    const tripStartDate = data.basicInfo.startDateTime.split("T")[0];
 
-// 🔁 Refresh the trips list so it's available immediately on Dashboard
-await loadTrips();
+    toast.success("Smart itinerary created!");
+    setShowSmartModal(false);
+
+    // 🧭 Redirect to MyItinerary
+    navigate(`/myitinerary/${tripId}`, {
+      state: {
+        tripId,
+        tripName,
+        tripStartDate,
+      },
+    });
 
   } catch (err: any) {
     toast.error(err.message || "Failed to generate itinerary");
   } finally {
-    setLoading(false); // Hide loader
+    setLoading(false);
   }
 };
+
 
 
 
@@ -502,22 +513,14 @@ const endDateTime = `${dateStr}T23:59:00`;
     <img src="/assets/logo.jpg" alt="Logo" className="h-8 w-8" />
     <h1 className="text-2xl font-bold text-[#03253D]">SmartTrip NYC</h1>
   </div>
- <div className="flex items-center gap-6 text-sm">
-  <button
-    onClick={() => setShowProfile(true)}
-    className="hover:text-blue-600 transition"
-  >
-    Profile
-  </button>
-  <button
-    onClick={handleLogout}
-    disabled={loggingOut}
-    className="hover:text-blue-600 transition"
-  >
-    {loggingOut ? "Logging out..." : "Logout"}
-  </button>
-</div>
-
+  <div className="space-x-4">
+    <button onClick={() => setShowProfile(true)} className="text-gray-600 hover:text-gray-800">
+      Profile
+    </button>
+    <button onClick={handleLogout} disabled={loggingOut} className="text-gray-600 hover:text-red-600">
+      {loggingOut ? "Logging out..." : "Logout"}
+    </button>
+  </div>
 </header>
       {/* Plan a new trip */}
       <div className="flex justify-end mb-6">
@@ -783,7 +786,7 @@ const endDateTime = `${dateStr}T23:59:00`;
                px-6 py-2 rounded-full text-sm font-semibold shadow
                hover:opacity-90 transition"
   >
-    ✨ Create Smart Itinerary
+    ✨ Generate with AI
   </button>
 </div>
 </div>

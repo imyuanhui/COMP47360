@@ -18,11 +18,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-<<<<<<< HEAD
-=======
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
->>>>>>> 37bd93637bdbff86d2c15c1739b7f5b8672b8e35
 import java.util.Map;
 
 @RestController
@@ -72,7 +69,6 @@ public class AuthController {
         }
     }
 
-
     @GetMapping("/oauth2/code/google")
     public void handleGoogleLogin(
             @AuthenticationPrincipal OAuth2User oAuth2User,
@@ -98,6 +94,8 @@ public class AuthController {
         String redirectUrl = "https://smarttrip.duckdns.org/oauth-success" +
                 "?accessToken=" + URLEncoder.encode(accessToken, StandardCharsets.UTF_8) +
                 "&refreshToken=" + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8);
-    }
 
+        // Redirect to frontend to store tokens
+        response.sendRedirect(redirectUrl);
+    }
 }
