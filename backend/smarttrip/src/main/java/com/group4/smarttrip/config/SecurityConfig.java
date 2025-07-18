@@ -50,13 +50,16 @@ public class SecurityConfig {
                 .httpBasic(Customizer.withDefaults())
 
                 // Enable OAuth2 login (DO NOT set defaultSuccessUrl here!)
+                // .oauth2Login(oauth -> oauth
+                //         // Let Spring use the redirect-uri from application.properties
+                //         .successHandler((request, response, authentication) -> {
+                //             // Instead of redirecting here, delegate to your controller
+                //             response.sendRedirect("/api/oauth2/code/google");
+                //         })
+                // );
                 .oauth2Login(oauth -> oauth
-                        // Let Spring use the redirect-uri from application.properties
-                        .successHandler((request, response, authentication) -> {
-                            // Instead of redirecting here, delegate to your controller
-                            response.sendRedirect("/api/oauth2/code/google");
-                        })
-                );
+    .defaultSuccessUrl("/api/oauth2/code/google", true)
+);
 
         return http.build();
     }
