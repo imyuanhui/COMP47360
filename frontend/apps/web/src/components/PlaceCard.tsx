@@ -140,9 +140,9 @@ export default function PlaceCard({
                 {busynessLevel ? (
                   <span
                     className={`font-bold ${
-                      busynessLevel === 'low'  ? 'text-green-600' :
-                      busynessLevel === 'med'  ? 'text-orange-500' :
-                      busynessLevel === 'high' ? 'text-red-600' : ''
+                      busynessLevel === 'low'  ? 'text-teal-600' :
+                      busynessLevel === 'med'  ? 'text-amber-500' :
+                      busynessLevel === 'high' ? 'text-purple-600' : ''
                     }`}
                   >
                     {busynessLevel}

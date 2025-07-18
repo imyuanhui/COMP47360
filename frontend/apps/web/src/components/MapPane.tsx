@@ -30,9 +30,9 @@ const defaultCentre  = { lat: 40.758, lng: -73.9855 };            // Times Sq. f
 const mapStyles: google.maps.MapTypeStyle[] = [
   { featureType: 'road',      elementType: 'labels',   stylers: [{ visibility: 'on' }] },
   { featureType: 'water',     elementType: 'geometry', stylers: [{ color: '#a2daf2' }] },
-  { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
+  { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#eaeaea' }] },
   { featureType: 'road',      elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-  { featureType: 'poi',       elementType: 'geometry', stylers: [{ color: '#e0f2e9' }] },
+  { featureType: 'poi',       elementType: 'geometry', stylers: [{ color: '#dbf2e3' }] },
   { featureType: 'poi',       elementType: 'labels',   stylers: [{ visibility: 'off' }] },
   { featureType: 'transit',   elementType: 'geometry', stylers: [{ color: '#d3d3d3' }] },
 ];
@@ -42,9 +42,9 @@ const mapStyles: google.maps.MapTypeStyle[] = [
 /* ------------------------------------------------------------------ */
 function markerIcon(level: string, size = 40): google.maps.Icon {
   const colour =
-    level === 'low'  ? '#34d399' :
+    level === 'low'  ? '#0d9488' :
     level === 'med'  ? '#f59e0b' :
-    level === 'high' ? '#ef4444' : '#9ca3af';
+    level === 'high' ? '#9333ea' : '#9ca3af';
 
   const label  =
     level === 'low'  ? 'L' :
@@ -204,10 +204,10 @@ export default function MapPane({
             <span
                 className={`capitalize font-semibold ${
                   lvl === 'high'
-                    ? 'text-red-600'
+                    ? 'text-purple-600'
                     : lvl === 'med'
-                    ? 'text-orange-500'
-                    : 'text-green-600'
+                    ? 'text-amber-500'
+                    : 'text-teal-600'
                 }`}
               >
               {lvl}
