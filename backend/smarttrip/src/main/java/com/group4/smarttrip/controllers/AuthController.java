@@ -69,7 +69,6 @@ public class AuthController {
         }
     }
 
-
     @GetMapping("/oauth2/code/google")
     public void handleGoogleLogin(
             @AuthenticationPrincipal OAuth2User oAuth2User,
@@ -99,6 +98,5 @@ public class AuthController {
         // Redirect to frontend to store tokens
         response.sendRedirect(redirectUrl);
     }
-
 }
 
