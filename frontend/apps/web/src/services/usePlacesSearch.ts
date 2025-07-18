@@ -80,7 +80,7 @@ export function usePlacesSearch() {
           if (status !== google.maps.places.PlacesServiceStatus.OK || !results)
             return reject(status);
 
-          const shuffled = [...results].sort(() => Math.random() - 0.5).slice(0, 10);
+          const shuffled = [...results].sort(() => Math.random() - 0.5).slice(0, 20);
           resolve(shuffled.map(toPlace));
         });
       }),

@@ -16,6 +16,8 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Trash2 } from "lucide-react";
+import { Bot } from "lucide-react";
+
 
 
 export default function Dashboard() {
@@ -139,14 +141,6 @@ setShowSmartModal(false);
 // 🔁 Refresh the trips list so it's available immediately on Dashboard
 await loadTrips();
 
-// ✅ Navigate to itinerary
-navigate(`/myitinerary/${data.tripId}`, {
-  state: {
-    tripName: data.tripName,
-    tripStartDate: data.startDateTime.split("T")[0],
-    tripId: data.tripId,
-  },
-});
   } catch (err: any) {
     toast.error(err.message || "Failed to generate itinerary");
   } finally {
@@ -212,8 +206,9 @@ const shuffleVideos = () => {
 
   try {
     const dateStr = selectedDate.toISOString().split("T")[0];
-    const startDateTime = `${dateStr}T${tripTime.start}:00`;
-    const endDateTime = `${dateStr}T${tripTime.end}:00`;
+   const startDateTime = `${dateStr}T00:00:00`;
+const endDateTime = `${dateStr}T23:59:00`;
+
 
     const token = localStorage.getItem("token");
     if (!token) {
@@ -339,12 +334,17 @@ const shuffleVideos = () => {
   };
 
   return (
-   <div className="min-h-screen overflow-y-auto hide-scrollbar bg-white text-gray-900 font-sans container mx-auto px-4 md:px-0">
+   <div className="min-h-screen overflow-y-auto hide-scrollbar bg-white text-gray-900 font-sans container mx-auto px-2 md:px-4">
+
 
 {showBot && (
   <div className="fixed bottom-20 right-6 w-80 bg-white shadow-2xl rounded-lg z-50 flex flex-col max-h-[70vh] overflow-hidden border">
-    <div className="bg-[#03253D] text-white p-3 font-semibold text-sm flex justify-between items-center">
-      <span>SmartBot Assistant</span>
+    <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-3 shadow-md drop-shadow-md flex justify-between items-center">
+      <div className="flex items-center gap-2">
+  <img src="/assets/bot.png" alt="Bot" className="h-6 w-6 rounded-full" />
+  <span className="font-semibold">SmartBot Assistant</span>
+</div>
+
       <button onClick={() => setShowBot(false)}>✕</button>
     </div>
     <div className="flex-1 overflow-y-auto px-3 py-2 text-sm">
@@ -356,6 +356,7 @@ const shuffleVideos = () => {
             }`}
           >
             {msg.text}
+            
           </div>
         </div>
       ))}
@@ -411,10 +412,12 @@ const shuffleVideos = () => {
       {!editMode ? (
         <>
           <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-sm text-gray-500 mb-1">Username</p>
-            <p className="font-medium text-lg">{profile.username}</p>
-            <p className="text-sm text-gray-500 mt-4 mb-1">Email</p>
-            <p className="font-medium text-lg">{profile.email}</p>
+           <p className="text-sm text-gray-500 mb-1">Username</p>
+<p className="font-medium text-lg">{profile.email}</p>
+
+<p className="text-sm text-gray-500 mt-4 mb-1">Email</p>
+<p className="font-medium text-lg">{profile.username}</p>
+
             <p className="text-sm text-gray-500 mt-4 mb-1">Subscription</p>
             <p className="font-semibold text-green-600">Premium</p>
           </div>
@@ -499,14 +502,22 @@ const shuffleVideos = () => {
     <img src="/assets/logo.jpg" alt="Logo" className="h-8 w-8" />
     <h1 className="text-2xl font-bold text-[#03253D]">SmartTrip NYC</h1>
   </div>
-  <div className="space-x-4">
-    <button onClick={() => setShowProfile(true)} className="text-gray-600 hover:text-gray-800">
-      Profile
-    </button>
-    <button onClick={handleLogout} disabled={loggingOut} className="text-gray-600 hover:text-red-600">
-      {loggingOut ? "Logging out..." : "Logout"}
-    </button>
-  </div>
+ <div className="flex items-center gap-6 text-sm">
+  <button
+    onClick={() => setShowProfile(true)}
+    className="hover:text-blue-600 transition"
+  >
+    Profile
+  </button>
+  <button
+    onClick={handleLogout}
+    disabled={loggingOut}
+    className="hover:text-blue-600 transition"
+  >
+    {loggingOut ? "Logging out..." : "Logout"}
+  </button>
+</div>
+
 </header>
       {/* Plan a new trip */}
       <div className="flex justify-end mb-6">
@@ -636,20 +647,7 @@ const shuffleVideos = () => {
               onChange={(date: Date | null) => date && setSelectedDate(date)}
               className="w-full border px-3 py-2 rounded mb-3"
             />
-            <div className="flex gap-2 mb-4">
-              <input
-                type="time"
-                value={tripTime.start}
-                onChange={(e) => setTripTime({ ...tripTime, start: e.target.value })}
-                className="flex-1 border px-2 py-1 rounded"
-              />
-              <input
-                type="time"
-                value={tripTime.end}
-                onChange={(e) => setTripTime({ ...tripTime, end: e.target.value })}
-                className="flex-1 border px-2 py-1 rounded"
-              />
-            </div>
+             
             <div className="flex justify-end gap-2">
               <button onClick={() => setShowModal(false)} className="text-gray-600">
                 Cancel
@@ -663,7 +661,8 @@ const shuffleVideos = () => {
       )}
 
    <h2 className="text-xl font-bold mb-4">My Trips</h2>
-<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-12">
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-12 relative z-0 overflow-visible">
+
 
   {myTrips.map((trip) => {
     const tripDate = new Date(trip.startDateTime);
@@ -679,7 +678,8 @@ const shuffleVideos = () => {
      onClick={() => {
   navigate(`/explore/${trip.tripId}`, {
     state: {
-      tripStartDate: trip.startDateTime.split("T")[0], // pass start date 'YYYY-MM-DD'
+      tripStartDate: (trip.startDateTime || ""),
+ // pass start date 'YYYY-MM-DD'
       tripName: trip.tripName,
       tripId: trip.tripId,
     },
@@ -688,11 +688,11 @@ const shuffleVideos = () => {
 
 
 
-        className="cursor-pointer bg-white shadow-md rounded-2xl overflow-hidden
-             border border-gray-200 transition-transform transform hover:scale-105
-             hover:shadow-xl duration-300 relative
-             h-44       
-             flex flex-col justify-between"   /* keeps delete button at bottom */
+        className="relative z-0 hover:z-20 cursor-pointer bg-white shadow-md rounded-2xl overflow-visible
+             border border-gray-200 transition-transform transform hover:scale-105 will-change-transform transform-gpu
+             hover:shadow-xl duration-300
+             h-44 flex flex-col justify-between"
+
         style={{
           backgroundImage: "url('/assets/pattern.svg')",
           backgroundRepeat: "no-repeat",
@@ -715,7 +715,7 @@ const shuffleVideos = () => {
 </div>
 
           
-         <div className="pt-1 flex justify-between items-center">
+        <div className="pt-1 flex flex-col items-start space-y-1">
   <button
     onClick={(e) => {
       e.stopPropagation();
@@ -737,6 +737,7 @@ const shuffleVideos = () => {
 </div>
 
 
+
         </div>
       </div>
     );
@@ -748,12 +749,19 @@ const shuffleVideos = () => {
 {/* Trip Card for + Plan a New Trip */}
 <div
   className="cursor-pointer bg-white shadow-md rounded-2xl overflow-hidden
-             border border-gray-200 transition-transform transform hover:scale-105
+             border border-gray-200 transition-transform transform hover:scale-105 will-change-transform transform-gpu
+
              hover:shadow-xl duration-300 flex flex-col items-center justify-center
              gap-3 py-6 h-44"
   onClick={() => setShowModal(true)}
 >
   {/* PLAN button – add w-full (or any specific width you prefer) */}
+  <div className="relative">
+  <div className="transform-gpu transition duration-300 hover:scale-105 ...">
+    {/* Trip card content */}
+  </div>
+</div>
+
   <button
     onClick={(e) => {
       e.stopPropagation();
@@ -852,12 +860,15 @@ const shuffleVideos = () => {
 )}
 <button
   onClick={() => setShowBot(!showBot)}
-  className="fixed bottom-6 right-6 bg-[#03253D] text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center text-xl z-40"
+  className="fixed bottom-6 right-6 bg-[#03253D] text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center z-40"
+  aria-label="Chat with SmartBot"
 >
-  💬
+  <Bot className="w-6 h-6" />
 </button>
 
-<footer className="mt-12 py-6 border-t text-sm text-gray-600 text-center">
+
+<footer className="mt-12 py-6 text-sm text-gray-600 text-center">
+
   <div className="flex justify-center gap-8">
     <button onClick={handleLogout} className="hover:underline">
       Logout

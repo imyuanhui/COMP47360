@@ -69,6 +69,7 @@ public class AuthController {
         }
     }
 
+
     @GetMapping("/oauth2/code/google")
     public void handleGoogleLogin(
             @AuthenticationPrincipal OAuth2User oAuth2User,
