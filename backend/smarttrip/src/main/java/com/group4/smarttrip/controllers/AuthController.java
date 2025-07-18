@@ -69,34 +69,34 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/oauth2/code/google")
-    public void handleGoogleLogin(
-            @AuthenticationPrincipal OAuth2User oAuth2User,
-            HttpServletResponse response) throws IOException {
-
-        Logger logger = LoggerFactory.getLogger(getClass());
-
-        if (oAuth2User == null) {
-            logger.error("OAuth2User is null — authentication not established.");
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "OAuth2User not found");
-            return;
-        }
-
-        // Log the full user attributes
-        logger.info("OAuth2User attributes: {}", oAuth2User.getAttributes());
-
-        // Login logic
-        Map<String, ?> result = authService.loginWithGoogle(oAuth2User);
-        String accessToken = (String) result.get("accessToken");
-        String refreshToken = (String) result.get("refreshToken");
-
-        // Build redirect URL for frontend OAuth2Redirect page
-        String redirectUrl = "https://smarttrip.duckdns.org/oauth-success" +
-                "?accessToken=" + URLEncoder.encode(accessToken, StandardCharsets.UTF_8) +
-                "&refreshToken=" + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8);
-
-        // Redirect to frontend to store tokens
-        response.sendRedirect(redirectUrl);
-    }
+//    @GetMapping("/oauth2/code/google")
+//    public void handleGoogleLogin(
+//            @AuthenticationPrincipal OAuth2User oAuth2User,
+//            HttpServletResponse response) throws IOException {
+//
+//        Logger logger = LoggerFactory.getLogger(getClass());
+//
+//        if (oAuth2User == null) {
+//            logger.error("OAuth2User is null — authentication not established.");
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "OAuth2User not found");
+//            return;
+//        }
+//
+//        // Log the full user attributes
+//        logger.info("OAuth2User attributes: {}", oAuth2User.getAttributes());
+//
+//        // Login logic
+//        Map<String, ?> result = authService.loginWithGoogle(oAuth2User);
+//        String accessToken = (String) result.get("accessToken");
+//        String refreshToken = (String) result.get("refreshToken");
+//
+//        // Build redirect URL for frontend OAuth2Redirect page
+//        String redirectUrl = "https://smarttrip.duckdns.org/oauth-success" +
+//                "?accessToken=" + URLEncoder.encode(accessToken, StandardCharsets.UTF_8) +
+//                "&refreshToken=" + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8);
+//
+//        // Redirect to frontend to store tokens
+//        response.sendRedirect(redirectUrl);
+//    }
 }
 
