@@ -92,7 +92,7 @@ public class AuthController {
         String refreshToken = (String) result.get("refreshToken");
 
         // Build redirect URL for frontend OAuth2Redirect page
-        String redirectUrl = "https://smarttrip.duckdns.org//oauth-success" +
+        String redirectUrl = "https://smarttrip.duckdns.org/oauth-success" +
                 "?accessToken=" + URLEncoder.encode(accessToken, StandardCharsets.UTF_8) +
                 "&refreshToken=" + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8);
 
