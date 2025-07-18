@@ -76,7 +76,7 @@ export default function SearchBar({ onSearch, onPlaceSelect }: Props) {
   }
 
   return (
-    <div className="mb-4">
+    <div>
       {isLoaded ? (
         <Autocomplete
           options={{
