@@ -67,7 +67,7 @@ export default function Layout({
         </button>
       </div>
 
-      <div className="h-screen overflow-x-hidden overflow-y-hidden md:flex">
+      <div className="h-screen overflow-x-hidden overflow-y-auto md:flex">
         {/* ───────────────────────── LEFT PANE ───────────────────────── */}
         <div className="w-full md:w-1/2 flex flex-col border-r border-gray-200">
 
