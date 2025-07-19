@@ -1,15 +1,16 @@
 package com.group4.smarttrip.controllers;
 
 import com.group4.smarttrip.services.AuthService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -45,4 +46,10 @@ public class OauthController {
 
         response.sendRedirect(redirectUrl);
     }
+
+    @GetMapping("/login")
+    public String loginError(@RequestParam(required = false) String error) {
+        return "Login failed: " + (error != null ? error : "Unknown error");
+    }
+
 }
