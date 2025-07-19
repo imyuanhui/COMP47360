@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import time, random, math
 import json
 from pathlib import Path
+import pandas as pd
 
 DEFAULT_INTEREST = 0  # fallback if trends data is missing
 
@@ -45,6 +46,15 @@ def fetch_interest(zone_name, timeframe='now 7-d', geo='US-NY', tz=360):
 
 #ADD
 CACHE_FILE = Path("/app/cache/trends_cache.json")
+DEFAULT_ZONE_FILE = Path(__file__).parent / "default_zone_interest.csv"
+
+default_zone_interest_map = {}
+if DEFAULT_ZONE_FILE.exists():
+    df_default = pd.read_csv(DEFAULT_ZONE_FILE)
+    for _, row in df_default.iterrows():
+        default_zone_interest_map[row['keyword']] = row['interest']
+        
+
 def get_cached_interest(zone_name):
     today_str = datetime.now().strftime("%Y-%m-%d")
     
@@ -63,12 +73,14 @@ def get_cached_interest(zone_name):
     print(f"[FETCH] No cache or expired. Fetching new data for {zone_name}")
     interest = fetch_interest(zone_name)
     
-    #read cache file
-    if cache.get("date")!= today_str:
-        cache ={"date": today_str, "data": {}}
-    cache["data"][zone_name] = interest
-    
-    with open(CACHE_FILE, "w") as f:
-        json.dump(cache, f)
-    
-    return interest
+    if interest != DEFAULT_INTEREST:
+        # 成功抓到 trends
+        cache["data"][zone_name] = interest
+        with open(CACHE_FILE, "w") as f:
+            json.dump(cache, f)
+        return interest
+    else:
+        # call 失敗 → fallback
+        fallback = default_zone_interest_map.get(zone_name, DEFAULT_INTEREST)
+        print(f"[FALLBACK] Using default average for {zone_name}: {fallback}")
+        return fallback
