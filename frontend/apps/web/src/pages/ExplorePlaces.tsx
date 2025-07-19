@@ -1,11 +1,15 @@
 /****************************************************************************************
- * ExplorePlaces.tsx
+ * ExplorePlaces.tsx — v6
  * ------------------------------------------------------------------
  * Combined view that:
  *   • Shows 10 *recommended* places (random or filtered)
  *   • Lets users run a text search; search hits are stacked *above* recommendations
  *   • Synchronises list ↔ map interactions
- *   • Offers a “+ Filter” modal with persistent check-boxes
+ *   • Offers a "+ Filter" modal with two columns:
+ *       – Column 1 : attraction types (existing behaviour)
+ *       – Column 2 : busyness level (low | med | high)
+ *
+ *  NOTE: All comments that already existed in the previous revision are kept verbatim.
  *****************************************************************************************/
 
 import React, { useCallback, useEffect, useState, useRef } from 'react';
@@ -19,6 +23,7 @@ import type { Place } from '../types';
 import { usePlacesSearch } from '../services/usePlacesSearch';
 import { useItinerary }   from '../services/useItinerary';
 import { fetchTripDetails, setAuthToken } from '../services/api';
+import { fetchBusynessLevel } from '../services/useBusyness';   // NEW
 
 /* ------------------------------------------------------------------ */
 /* Constants */
@@ -32,13 +37,20 @@ const MANHATTAN_RADIUS = 5_500;            // metres
 
 const FILTER_OPTIONS = [
   { type: 'museum',        label: 'Museums'        },
+  { type: 'restaurant',    label: 'Restaurant'     },
+  { type: 'cafe',          label: 'Cafe'           },
   { type: 'park',          label: 'Parks'          },
   { type: 'art_gallery',   label: 'Art Galleries'  },
   { type: 'shopping_mall', label: 'Shopping Malls' },
   { type: 'library',       label: 'Libraries'      },
   { type: 'night_club',    label: 'Night-life'     },
 ] as const;
+
 type FilterType = typeof FILTER_OPTIONS[number]['type'];
+
+/* NEW — busyness levels */
+const BUSYNESS_LEVELS = ['low', 'med', 'high'] as const;
+type BusynessLevel = typeof BUSYNESS_LEVELS[number];
 
 /* =========================================================================
  * Component
@@ -54,11 +66,12 @@ export default function ExplorePlaces() {
   const [query,   setQuery]   = useState('');
   const [loading, setLoading] = useState(false);
   
-
-  /* ───── Filter-modal state ───── */
+  /* ───── Filter‑modal state ───── */
   const [filters,      setFilters]      = useState<FilterType[]>([]);
+  const [busyness,     setBusyness]     = useState<BusynessLevel | null>(null);      // NEW
   const [showModal,    setShowModal]    = useState(false);
   const [draftFilters, setDraftFilters] = useState<FilterType[]>([]);
+  const [draftBusyness,setDraftBusyness]= useState<BusynessLevel | null>(null);     // NEW
 
   /* ───── Data lists ───── */
   const [recommended,   setRecommended]   = useState<Place[]>([]);
@@ -103,31 +116,44 @@ export default function ExplorePlaces() {
   }, [saved, tripId]);
 
   /* ------------------------------------------------------------------
+   * Helper: filter places by current `busyness` selection (client‑side)
+   * ------------------------------------------------------------------ */
+  const applyBusyness = useCallback(async (list: Place[]): Promise<Place[]> => {
+    if (!busyness) return list;                 // nothing selected → skip
+
+    const out: Place[] = [];
+    for (const p of list) {
+      const lvl = await fetchBusynessLevel(p.lat, p.lng);
+      if (lvl === busyness) out.push(p);
+      if (out.length === 20) break;             // cap early – we never need more
+    }
+    return out;
+  }, [busyness]);
+
+  /* ------------------------------------------------------------------
    * Helper: refresh 10 recommended places (randomised)
    * ------------------------------------------------------------------ */
   const refreshRecommended = useCallback(() => {
     if (!isReady) return;
-
     setLoading(true);
 
-    const fetch = filters.length
-      ? searchText('tourist attraction', DEFAULT_CENTRE, filters, MANHATTAN_RADIUS)
-        .then(r => [...r].sort(() => Math.random() - 0.5).slice(0, 20))
-      : fetchRandomPlaces(DEFAULT_CENTRE, MANHATTAN_RADIUS);
-
-    fetch
-      .then(r => {
-        setRecommended(r);
-        
-      })
+    searchText(
+        'tourist attraction OR restaurant OR museum',   // same query regardless of filters
+        DEFAULT_CENTRE,
+        filters,                                        // may be an empty array
+        MANHATTAN_RADIUS,
+    )
+      .then(applyBusyness)
+      .then(r => [...r].sort(() => Math.random() - 0.5).slice(0, 20))
+      .then(setRecommended)
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [isReady, filters, fetchRandomPlaces, searchText, searchResults.length]);
+  }, [isReady, filters, applyBusyness, searchText]);
 
-  /* 1️⃣ initial load + whenever filters change */
+  /* 1️⃣ initial load + whenever filters OR busyness change */
   useEffect(refreshRecommended, [refreshRecommended]);
 
-  /* 2️⃣ fetch trip details (name / date) */
+  /* 2️⃣ fetch trip details (name / date) — unchanged */
   useEffect(() => {
     if (!tripId) return;
 
@@ -160,6 +186,7 @@ export default function ExplorePlaces() {
     setLoading(true);
 
     searchText(q, DEFAULT_CENTRE, filters, MANHATTAN_RADIUS)
+      .then(applyBusyness)
       .then(r => {
         if (cancelled) return;
         const top = r.slice(0, 10);
@@ -174,15 +201,15 @@ export default function ExplorePlaces() {
       .finally(() => !cancelled && setLoading(false));
 
     return () => { cancelled = true; };
-  }, [isReady, query, filters, searchText]);
+  }, [isReady, query, filters, applyBusyness, searchText]);
 
-  /* Merge search + recommended and de-duplicate by id */
+  /* Merge search + recommended and de‑duplicate by id */
   const combined: Place[] = [
     ...searchResults,
     ...recommended.filter(r => !searchResults.some(s => s.id === r.id)),
   ];
 
-  /* Reinstate the size of the hero image after 5 seconds*/
+  /* Reinstate the size of the hero image after 5 seconds */
   const handleCardHover = () => {
     setHeroCollapsed(true);
     if (inactivityTimer.current) {
@@ -190,65 +217,63 @@ export default function ExplorePlaces() {
     }
     inactivityTimer.current = setTimeout(() => {
       setHeroCollapsed(false);
-    }, 5000);
+    }, 10000);
   };
 
   /* =========================================================================
-   * LEFT column – SearchBar, “+ Filter”, PlaceCard list
+   * LEFT column – SearchBar, “+ Filter”, PlaceCard list
    * =========================================================================*/
-  
   const left = (
     /* Collapse hero banner on first hover */
     <div onMouseEnter={handleCardHover}>
       <div className="flex items-center gap-2 mb-4">
-      
-      <button
-        disabled={loading}
-        onClick={() => {
-          setDraftFilters(filters);
-          setShowModal(true);
-        }}
-        className={`h-[42px] rounded-[10px] px-3 py-1 transition-colors disabled:opacity-50 whitespace-nowrap ${
-          showModal
-            ? 'bg-white text-[#022c44] border border-[#022c44]'
-            : 'bg-[#022c44] text-white text-sm border border-transparent hover:bg-[#022c44]/90'
-        }`}
-      >
-        Filter Search
-      </button>
-
-      <div className="flex-1">
-        <SearchBar
-          onSearch={setQuery}
-          onPlaceSelect={pr => {
-            const loc = pr.geometry?.location;
-            if (!loc) return;
-            setFocusCoord({ lat: loc.lat(), lng: loc.lng() });
-            setMapZoom(15);
-            setInfoPlace({
-              id: pr.place_id || '',
-              name: pr.name || '',
-              address: pr.formatted_address || '',
-              lat: loc.lat(),
-              lng: loc.lng(),
-              imageUrl: '',
-              rating: 0,
-              crowdTime: '',
-              visitTime: '',
-              travel: { walk: 0, drive: 0, transit: 0 },
-            });
+        <button
+          disabled={loading}
+          onClick={() => {
+            setDraftFilters(filters);
+            setDraftBusyness(busyness);           // NEW
+            setShowModal(true);
           }}
-        />
+          className={`h-[42px] rounded-[10px] px-3 py-1 transition-colors disabled:opacity-50 whitespace-nowrap ${
+            showModal
+              ? 'bg-white text-[#022c44] border border-[#022c44]'
+              : 'bg-[#022c44] text-white text-sm border border-transparent hover:bg-[#022c44]/90'
+          }`}
+        >
+          Filter Search
+        </button>
+
+        <div className="flex-1">
+          <SearchBar
+            onSearch={setQuery}
+            onPlaceSelect={pr => {
+              const loc = pr.geometry?.location;
+              if (!loc) return;
+              setFocusCoord({ lat: loc.lat(), lng: loc.lng() });
+              setMapZoom(15);
+              setInfoPlace({
+                id: pr.place_id || '',
+                name: pr.name || '',
+                address: pr.formatted_address || '',
+                lat: loc.lat(),
+                lng: loc.lng(),
+                imageUrl: '',
+                rating: 0,
+                crowdTime: '',
+                visitTime: '',
+                travel: { walk: 0, drive: 0, transit: 0 },
+              });
+            }}
+          />
+        </div>
       </div>
-         
-   </div>
-  
+
       {loadError && (
         <p className="mt-4 text-center text-red-600">
           Failed to load Google Maps SDK: {loadError.message}
         </p>
       )}
-  
+
       {/* Scrollable list */}
       <div className="space-y-4 pr-1">
         {loading ? (
@@ -260,7 +285,7 @@ export default function ExplorePlaces() {
         ) : (
           combined.map(p => {
             const isSaved = saved.some(sp => sp.id === p.id);
-  
+
             return (
               <div
                 key={p.id}
@@ -280,7 +305,7 @@ export default function ExplorePlaces() {
                   onAdd={async (id, time) => {
                     const selected = combined.find(pl => pl.id === id);
                     if (!selected) return;
-  
+
                     const ok = await addToItinerary(selected, time);
                     if (!ok) alert(`Only three places allowed at ${time}.`);
                   }}
@@ -295,36 +320,69 @@ export default function ExplorePlaces() {
   );
 
   /* =========================================================================
-   * FILTER MODAL overlay
+   * FILTER MODAL overlay (two‑column layout)
    * =========================================================================*/
   const FilterModal = !showModal ? null : (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="animate-fade-in max-h-[80vh] w-96 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="mb-4 text-center text-xl font-semibold">Filter attractions</h2>
+      <div className="animate-fade-in max-h-[80vh] w-[28rem] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+        <h2 className="mb-4 text-center text-xl font-semibold">Filter Search</h2>
 
-        <div className="space-y-2">
-          {FILTER_OPTIONS.map(opt => (
-            <label
-              key={opt.type}
-              className="flex cursor-pointer items-center space-x-2 text-sm"
-            >
-              <input
-                type="checkbox"
-                className="accent-blue-600"
-                checked={draftFilters.includes(opt.type)}
-                onChange={e =>
-                  setDraftFilters(prev =>
-                    e.target.checked
-                      ? [...prev, opt.type]
-                      : prev.filter(t => t !== opt.type),
-                  )
-                }
-              />
-              <span>{opt.label}</span>
-            </label>
-          ))}
+        {/* ---------- two columns ---------- */}
+        <div className="grid grid-cols-2 gap-6">
+          {/* column 1 – attractions */}
+          <div>
+            <h3 className="mb-2 font-medium text-sm">Attractions</h3>
+            <div className="space-y-2">
+              {FILTER_OPTIONS.map(opt => (
+                <label key={opt.type} className="flex items-center space-x-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="accent-blue-600"
+                    checked={draftFilters.includes(opt.type)}
+                    onChange={e =>
+                      setDraftFilters(prev =>
+                        e.target.checked ? [...prev, opt.type] : prev.filter(t => t !== opt.type),
+                      )
+                    }
+                  />
+                  <span>{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* column 2 – busyness */}
+          <div>
+            <h3 className="mb-2 font-medium text-sm">Busyness</h3>
+            <div className="space-y-2">
+              {BUSYNESS_LEVELS.map(level => (
+                <label key={level} className="flex items-center space-x-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="busyness"
+                    className="accent-blue-600"
+                    checked={draftBusyness === level}
+                    onChange={() => setDraftBusyness(level)}
+                  />
+                  <span className="capitalize">{level}</span>
+                </label>
+              ))}
+              {/* “Any” */}
+              <label className="flex items-center space-x-2 text-sm cursor-pointer">
+                <input
+                  type="radio"
+                  name="busyness"
+                  className="accent-blue-600"
+                  checked={draftBusyness == null}
+                  onChange={() => setDraftBusyness(null)}
+                />
+                <span>Any</span>
+              </label>
+            </div>
+          </div>
         </div>
 
+        {/* buttons */}
         <div className="mt-6 flex justify-end space-x-2">
           <button
             className="rounded bg-gray-200 px-3 py-1 text-sm hover:bg-gray-300"
@@ -336,6 +394,7 @@ export default function ExplorePlaces() {
             className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
             onClick={() => {
               setFilters(draftFilters);
+              setBusyness(draftBusyness);
               setShowModal(false);
               refreshRecommended();
             }}
@@ -369,7 +428,6 @@ export default function ExplorePlaces() {
         const ok = await addToItinerary(place, time);
         if (!ok) alert(`Only three places allowed at ${time}.`);
       }}
-
     />
   );
 

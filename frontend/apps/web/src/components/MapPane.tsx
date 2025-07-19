@@ -1,10 +1,14 @@
 /**********************************************************************
- * MapPane.tsx  — v3
+ * MapPane.tsx  — v4
  * --------------------------------------------------------------------
- * Google-Maps wrapper for Explore Places, Saved Places & My Itinerary.
+ * Google‑Maps wrapper for Explore Places, Saved Places & My Itinerary.
  * All markers are coloured by predicted busyness.  The predictions
- * come from a single shared in-memory cache so no place is fetched
+ * come from a single shared in‑memory cache so no place is fetched
  * more than once per browser tab.  “unknown” levels are never cached.
+ *
+ * 🆕 2025‑07‑19 — While the backend is still calculating a prediction
+ *     (i.e. before the result is cached) we now show a marker with a
+ *     *loading* glyph instead of showing *no* marker at all.
  *********************************************************************/
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -41,6 +45,29 @@ const mapStyles: google.maps.MapTypeStyle[] = [
 /* Marker icon factory                                                 */
 /* ------------------------------------------------------------------ */
 function markerIcon(level: string, size = 40): google.maps.Icon {
+  /* -------------------------------------------------------------- */
+  /* 🆕  Loading marker (grey outline, animated dots would be nice
+   *     but SVG SMIL is disabled in Chrome; we go for “…” instead)
+   * -------------------------------------------------------------- */
+  if (level === 'loading') {
+    const svg = `
+    <svg width="${size}" height="${size + 6}" viewBox="0 0 40 46" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="14" fill="#ffffff" stroke="#022c44" stroke-width="1.5"/>
+      <path d="M16 32 L24 32 L20 40 Z" fill="#ffffff"/>
+      <line x1="16" y1="32" x2="20" y2="40" stroke="#022c44" stroke-width="1.5"/>
+      <line x1="24" y1="32" x2="20" y2="40" stroke="#022c44" stroke-width="1.5"/>
+      <text x="20" y="25" font-size="12" font-family="Arial" font-weight="bold"
+            text-anchor="middle" fill="#022c44">…</text>
+    </svg>`;
+
+    return {
+      url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
+      scaledSize: new google.maps.Size(size, size + 6),
+      anchor: new google.maps.Point(size / 2, size + 6),
+    };
+  }
+
+  /* ---------- existing coloured icons ---------- */
   const colour =
     level === 'low'  ? '#6590f6' :
     level === 'med'  ? '#f4b241' :
@@ -51,17 +78,12 @@ function markerIcon(level: string, size = 40): google.maps.Icon {
     level === 'med'  ? 'M' :
     level === 'high' ? 'H' : 'U';
 
-    const svg = `
+  const svg = `
     <svg width="${size}" height="${size + 6}" viewBox="0 0 40 46" xmlns="http://www.w3.org/2000/svg">
       <circle cx="20" cy="20" r="14" fill="${colour}" stroke="#022c44" stroke-width="1.5"/>
-      
-      <!-- Triangle fill -->
       <path d="M16 32 L24 32 L20 40 Z" fill="${colour}"/>
-  
-      <!-- Side strokes only (left and right) -->
       <line x1="16" y1="32" x2="20" y2="40" stroke="#022c44" stroke-width="1.5"/>
       <line x1="24" y1="32" x2="20" y2="40" stroke="#022c44" stroke-width="1.5"/>
-      
       <text x="20" y="25" font-size="12" font-family="Arial" font-weight="bold"
             text-anchor="middle" fill="#022c44">${label}</text>
     </svg>
@@ -69,13 +91,13 @@ function markerIcon(level: string, size = 40): google.maps.Icon {
 
   return {
     url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
-    scaledSize:      new google.maps.Size(size, size + 6),
-    anchor:          new google.maps.Point(size / 2, size + 6),
+    scaledSize: new google.maps.Size(size, size + 6),
+    anchor: new google.maps.Point(size / 2, size + 6),
   };
 }
 
 /* ------------------------------------------------------------------ */
-/* Time-slot options for the "Add to My Itinerary" dropdown            */
+/* Time‑slot options for the "Add to My Itinerary" dropdown            */
 /* ------------------------------------------------------------------ */
 const TIMES = Array.from({ length: 10 }, (_, i) => `${(9 + i).toString().padStart(2, '0')}:00`);
 
@@ -133,7 +155,7 @@ export default function MapPane({
     high: true,
     med: true,
     low: true,
-    unknown: true,
+    unknown: true,   // “loading” piggy‑backs on this flag
   });
   const toggle = (lvl: keyof typeof filter) =>
     setFilter(prev => ({ ...prev, [lvl]: !prev[lvl] }));
@@ -151,32 +173,44 @@ export default function MapPane({
   useEffect(() => {
     if (!places.length) { setWithLevels([]); return; }
 
-    const fetchAll = async () => {
-      const rows = await Promise.all(
-        places.map(async p => {
-          const key = `${p.lat},${p.lng}`;
-          if (cache.has(key))
-            return { ...p, busynessLevel: cache.get(key)! };
+    /* ---------------------------------------------------------- */
+    /* 1️⃣  Immediately populate with *loading* markers so the map
+     *     never appears empty while requests are in‑flight.
+     * ---------------------------------------------------------- */
+    setWithLevels(
+      places.map(p => {
+        const key = `${p.lat},${p.lng}`;
+        return {
+          ...p,
+          busynessLevel: cache.has(key) ? cache.get(key)! : 'loading',
+        };
+      }),
+    );
 
-          try {
-            const { data } = await axios.get(
-              `/api/busyness?lat=${p.lat}&lon=${p.lng}`,
-            );
-            const level = Array.isArray(data) ? data[0]?.busynessLevel : data.busynessLevel;
-            const val   = level ?? 'unknown';
+    /* ---------------------------------------------------------- */
+    /* 2️⃣  Fetch predictions for any coordinates not cached yet,
+     *     then patch state *incrementally*.
+     * ---------------------------------------------------------- */
+    places.forEach(async p => {
+      const key = `${p.lat},${p.lng}`;
+      if (cache.has(key)) return;                        // already have it
 
-            if (val !== 'unknown') cache.set(key, val);
-            return { ...p, busynessLevel: val };
-          } catch {
-            return { ...p, busynessLevel: 'unknown' };
-          }
-        }),
-      );
+      try {
+        const { data } = await axios.get(`/api/busyness?lat=${p.lat}&lon=${p.lng}`);
+        const level = Array.isArray(data) ? data[0]?.busynessLevel : data.busynessLevel;
+        const val   = level ?? 'unknown';
 
-      setWithLevels(rows);
-    };
+        if (val !== 'unknown') cache.set(key, val);
 
-    fetchAll();
+        setWithLevels(prev =>
+          prev.map(row => (row.id === p.id ? { ...row, busynessLevel: val } : row)),
+        );
+      } catch {
+        setWithLevels(prev =>
+          prev.map(row => (row.id === p.id ? { ...row, busynessLevel: 'unknown' } : row)),
+        );
+      }
+    });
   }, [places]);
 
   /* ---------------- Map centring / zoom ---------------- */
@@ -197,8 +231,7 @@ export default function MapPane({
       {/* --- filter widget --- */}
       <div 
         className="absolute top-3 right-3 z-10 w-44 rounded border bg-white p-3 shadow"
-        // style={{ borderColor: '#022c44'}}
-        >
+      >
         <p className="mb-1 text-xs font-semibold leading-none">Show markers</p>
         {(['high', 'med', 'low'] as const).map(lvl => (
           <label key={lvl} className="mb-1 flex items-center gap-2 text-xs">
@@ -209,14 +242,14 @@ export default function MapPane({
               className="h-4 w-4 rounded custom-blue"
             />
             <span
-                className={`capitalize font-semibold ${
-                  lvl === 'high'
-                  ? 'text-customPink'
-                  : lvl === 'med'
-                  ? 'text-customAmber'
-                  : 'text-customTeal'
-                }`}
-              >
+              className={`capitalize font-semibold ${
+                lvl === 'high'
+                ? 'text-customPink'
+                : lvl === 'med'
+                ? 'text-customAmber'
+                : 'text-customTeal'
+              }`}
+            >
               {lvl}
             </span>
           </label>
@@ -228,9 +261,7 @@ export default function MapPane({
         mapContainerStyle={containerStyle}
         center={centre}
         zoom={zoom}
-        onLoad={m => {                              // braces create a block
-            mapRef.current = m;                     // ← perform the assignment
-        }}
+        onLoad={m => { mapRef.current = m; }}
         options={{
           styles: mapStyles,
           clickableIcons: false,
@@ -242,7 +273,10 @@ export default function MapPane({
       >
         {/* --- markers --- */}
         {withLevels
-          .filter(p => filter[p.busynessLevel as keyof typeof filter])
+          .filter(p => {
+            const lvl = p.busynessLevel === 'loading' ? 'unknown' : p.busynessLevel;
+            return filter[lvl as keyof typeof filter];
+          })
           .map(p => (
             <Marker
               key={p.id}
@@ -258,27 +292,30 @@ export default function MapPane({
             position={{ lat: infoPlace.lat, lng: infoPlace.lng }}
             onCloseClick={onInfoClose}
           >
-            <div className="-mt-9 min-w-[12rem] max-w-[14rem] pr-3 space-y-2 pb-4"> {/* ---Settings for info window--- */}
-              <h3 className="mb-1 font-semibold">{infoPlace.name}</h3> {/* ---Place name--- */}
-              <p className="mt-1 mb-3 text-xs">{infoPlace.address}</p> {/* ---Address--- */}
-              <p className="text-xs text-gray-600"> {/* ---Busyness rating--- */}
-                  {(() => {
-                  const level = withLevels.find(p => p.id === infoPlace.id)?.busynessLevel;
-                  let levelClass = '';
-                  if (level === 'low') levelClass = 'text-customTeal font-bold';
-                  else if (level === 'med') levelClass = 'text-customAmber font-bold';
-                  else if (level === 'high') levelClass = 'text-customPink font-bold';
+            <div className="-mt-9 min-w-[12rem] max-w-[14rem] pr-3 space-y-2 pb-4">
+              {/* ---Place name--- */}
+              <h3 className="mb-1 font-semibold">{infoPlace.name}</h3>
+              {/* ---Address--- */}
+              <p className="mt-1 mb-3 text-xs">{infoPlace.address}</p>
+              {/* ---Busyness rating--- */}
+              {(() => {
+                const level = withLevels.find(p => p.id === infoPlace.id)?.busynessLevel;
+                let levelClass = '';
+                if (level === 'low') levelClass = 'text-customTeal font-bold';
+                else if (level === 'med') levelClass = 'text-customAmber font-bold';
+                else if (level === 'high') levelClass = 'text-customPink font-bold';
 
-                  return (
-                    <p className="text-xs text-gray-600">
-                      Busyness:{' '}
-                      <span className={levelClass}>
-                        {level ?? '…'}
-                      </span>
-                    </p>
-                  );
-                })()}
-              </p>
+                return (
+                  <p className="text-xs text-gray-600">
+                    Busyness:{' '}
+                    {level === 'loading' ? (
+                      <span>Loading…</span>
+                    ) : (
+                      <span className={levelClass}>{level ?? '…'}</span>
+                    )}
+                  </p>
+                );
+              })()}
 
               {/* ---------------- Action buttons (Explore Places only) ---------------- */}
               {onToggleSave && (
