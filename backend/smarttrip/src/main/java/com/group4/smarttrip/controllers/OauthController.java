@@ -29,6 +29,8 @@ public class OauthController {
             @AuthenticationPrincipal OAuth2User oAuth2User,
             HttpServletResponse response) throws IOException {
 
+        log.info("Reached /oauth2/code/google controller");
+
         if (oAuth2User == null) {
             log.error("OAuth2User is null — Google login failed or not processed by Spring Security");
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Google login failed");
