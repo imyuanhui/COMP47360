@@ -52,9 +52,13 @@ public class SecurityConfig {
                 .oauth2Login(oauth -> oauth
                         // Let Spring use the redirect-uri from application.properties
                         .successHandler((request, response, authentication) -> {
-                            System.out.println("Google login succeed, redirect to: /oauth2/code/google");
+                            System.out.println("[OAuth2Login Success] Authentication complete. Redirecting to: /oauth2/code/google");
                             // Instead of redirecting here, delegate to your controller
                             response.sendRedirect("/oauth2/code/google");
+                        })
+                        .failureHandler((request, response, exception) -> {
+                            System.err.println("[OAuth2Login Failure] " + exception.getMessage());
+                            response.sendRedirect("/login?oauth2Error=true");
                         })
                 );
 
