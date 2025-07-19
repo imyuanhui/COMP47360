@@ -54,6 +54,10 @@ export default function Layout({
     { label: 'My Itinerary',       path: tripId ? `/myitinerary/${tripId}` : '/itinerary' },
     { label: 'Saved Places', path: tripId ? `/saved/${tripId}` : '/' },
   ];
+ const heroImages = Array.from({ length: 20 }, (_, i) => `/assets/hero-images/NYC-${i + 1}.jpg`);
+const [imageUrl] = useState(() => heroImages[Math.floor(Math.random() * heroImages.length)]);
+console.log("Layout component loaded!");
+
 
   return (
     <>
@@ -92,7 +96,9 @@ export default function Layout({
               className=  {`relative w-full overflow-hidden rounded-[10px] 
                         bg-cover bg-center transition-all duration-300
                         ${heroCollapsed ? 'h-32' : 'h-32 md:h-64'}`}
-              style={{ backgroundImage: "url('/assets/hero.jpg')" }}
+              style={{ backgroundImage: `url('${imageUrl}')` }}
+
+
             >
               <div className="absolute inset-0 flex items-end bg-black/30 p-6">
                 <div>
