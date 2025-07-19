@@ -44,7 +44,7 @@ def fetch_interest(zone_name, timeframe='now 7-d', geo='US-NY', tz=360):
 
 
 #ADD
-CACHE_FILE = Path(__file__).parent / "trends_cache.json"
+CACHE_FILE = Path("/app/cache/trends_cache.json")
 def get_cached_interest(zone_name):
     today_str = datetime.now().strftime("%Y-%m-%d")
     

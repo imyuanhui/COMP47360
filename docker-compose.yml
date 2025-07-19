@@ -21,6 +21,8 @@ services:
       - flask-ml
     env_file:
       - .env
+    volumes:
+      - /home/student/ml-cache:/app/cache
     ports:
       - "18080:8080"
     networks:
