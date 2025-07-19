@@ -96,7 +96,7 @@ export default function Layout({
             >
               <div className="absolute inset-0 flex items-end bg-black/30 p-6">
                 <div>
-                  <h2 className="text-3xl font-semibold text-white">
+                  <h2 className="text-2xl md:text-3xl font-semibold text-white">
                     {tripName || 'Your Trip'}
                   </h2>
                   {tripDate && (
