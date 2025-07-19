@@ -21,8 +21,6 @@ services:
       - flask-ml
     env_file:
       - .env
-    volumes:
-      - /home/student/ml-cache:/app/cache
     ports:
       - "18080:8080"
     networks:
@@ -32,6 +30,8 @@ services:
     build:
       context: ./backend/flask-model-api
     container_name: smarttrip-ml
+    volumes:
+      - /home/student/ml-cache:/app/cache
     networks:
       - smarttrip-net
 
