@@ -66,8 +66,9 @@ export default function LandingPage() {
 
   const handleLogin = async () => {
     try {
-      const { accessToken } = await apiLogin(loginIdentifier, loginPassword);
-      localStorage.setItem("token", accessToken);
+      const { accessToken, refreshToken } = await apiLogin(loginIdentifier, loginPassword);
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
       setAuthToken(accessToken);
       toast.success("Logged in!");
       setShowLogin(false);

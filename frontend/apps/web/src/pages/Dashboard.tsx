@@ -114,7 +114,7 @@ const handleSmartSubmit = async () => {
   try {
     setLoading(true);
 
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("accessToken");
     if (!token) {
       toast.error("Not authenticated");
       return;
@@ -288,6 +288,7 @@ const endDateTime = `${dateStr}T23:59:00`;
       console.warn("API logout failed, clearing token anyway");
     } finally {
       localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
       toast.success("Logged out");
       navigate("/");
       setLoggingOut(false);

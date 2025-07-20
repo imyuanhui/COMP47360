@@ -43,7 +43,7 @@ export default function MyItinerary() {
 
     const loadTrip = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('accessToken');
         if (!token) return;
         setAuthToken(token);
 
@@ -64,12 +64,19 @@ export default function MyItinerary() {
 
   /* ---------- Itinerary State ---------- */
   const { entries, remove } = useItinerary(tripId); // Custom hook to get/remove itinerary entries
-
+  
   const [focusCoord, setFocusCoord] = useState<google.maps.LatLngLiteral | null>(null); // Map focus
   const [mapZoom, setMapZoom] = useState(13);                                            // Map zoom level
   const [highlightId, setHighlight] = useState<string | null>(null);                    // Highlighted card
   const [infoPlace, setInfoPlace] = useState<Place | null>(null);                       // Map popup state
 
+  // handle mappane update
+  useEffect(() => {
+  if (infoPlace && !entries.some(e => e.place.id === infoPlace.id)) {
+    setInfoPlace(null);
+  }
+}, [entries, infoPlace]);
+  
   /** Build a Google Maps directions URL for the current trip. */
 const buildMapsUrl = (): string | null => {
   if (!entries.length) return null;
@@ -172,12 +179,11 @@ const buildMapsUrl = (): string | null => {
         setInfoPlace(p);
       }}
 
-      // Remove button inside InfoWindow
-      // onRemoveFromItinerary={(place: Place) => {
-      //   const entry = entries.find(e => e.place.id === place.id);
-      //   if (entry) remove(place.id, entry.time);
-      //   setInfoPlace(null); // Close popup after deletion
-      // }}
+      onRemoveFromItinerary={(place: Place) => {
+        const entry = entries.find(e => e.place.id === place.id);
+        if (entry) remove(place.id, entry.time);
+        setInfoPlace(null); // Close popup after deletion
+      }}
     />
   );
 
