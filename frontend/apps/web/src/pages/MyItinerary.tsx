@@ -43,7 +43,7 @@ export default function MyItinerary() {
 
     const loadTrip = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('accessToken');
         if (!token) return;
         setAuthToken(token);
 

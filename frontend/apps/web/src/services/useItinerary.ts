@@ -33,7 +33,7 @@ export function useItinerary(tripId: string) {
     const loadItinerary = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("accessToken");
         if (!token) return;
         setAuthToken(token);
 
