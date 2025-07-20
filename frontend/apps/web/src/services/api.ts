@@ -24,7 +24,7 @@ export function clearAuthToken() {
 }
 
 const authHeader = () => ({
-  Authorization: `Bearer ${localStorage.getItem('token')}`,
+  Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
 });
 
 
@@ -52,7 +52,7 @@ export function login(
   password: string
 ): Promise<LoginResponse> {
   return api.post("/login", { identifier, password }).then((r) => {
-    localStorage.setItem("token", r.data.accessToken);
+    localStorage.setItem("accessToken", r.data.accessToken);
     localStorage.setItem("refreshToken", r.data.refreshToken);
     setAuthToken(r.data.accessToken);
     return r.data;
@@ -60,12 +60,12 @@ export function login(
 }
 
 export async function logout() {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("accessToken");
   if (!token) throw new Error("Token not found");
 
   setAuthToken(token);
 
-  localStorage.removeItem("token");
+  localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   clearAuthToken();
 }
@@ -300,14 +300,14 @@ api.interceptors.response.use(
         });
 
         const newAccessToken = res.data.accessToken;
-        localStorage.setItem("token", newAccessToken);
+        localStorage.setItem("accessToken", newAccessToken);
         setAuthToken(newAccessToken);
 
         originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (err) {
         console.error("Auto refresh failed:", err);
-        localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         window.location.href = "/login";
         return Promise.reject(err);

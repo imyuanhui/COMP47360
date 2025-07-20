@@ -4,22 +4,24 @@
  * Page that lists the user’s saved attractions and shows them on a map.
  ***********************************************************************/
 
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import Layout from '../components/Layout';
-import PlaceCard from '../components/PlaceCard';
-import MapPane from '../components/MapPane';
-import { useSavedPlaces } from '../services/useSavedPlaces';
-import { fetchTripDetails, setAuthToken } from '../services/api';
-import type { Place } from '../types';
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import Layout from "../components/Layout";
+import PlaceCard from "../components/PlaceCard";
+import MapPane from "../components/MapPane";
+import { useSavedPlaces } from "../services/useSavedPlaces";
+import { fetchTripDetails, setAuthToken } from "../services/api";
+import type { Place } from "../types";
 
 /* default map centre: Manhattan */
-const DEFAULT_CENTRE: google.maps.LatLngLiteral = { lat: 40.7422, lng: -73.9880 };
+const DEFAULT_CENTRE: google.maps.LatLngLiteral = {
+  lat: 40.7422,
+  lng: -73.988,
+};
 
 export default function SavedPlaces() {
   const { tripId } = useParams();
-const { saved, addPlace, removePlace, loading } = useSavedPlaces(tripId!);
-
+  const { saved, addPlace, removePlace, loading } = useSavedPlaces(tripId!);
 
   const [tripName, setTripName] = useState("Your Trip");
   const [tripDate, setTripDate] = useState("Date not set");
@@ -29,13 +31,15 @@ const { saved, addPlace, removePlace, loading } = useSavedPlaces(tripId!);
 
     const loadTrip = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("accessToken");
         if (!token) return;
         setAuthToken(token);
 
         const trip = await fetchTripDetails(tripId);
         setTripName(trip.basicInfo.tripName);
-        setTripDate(new Date(trip.basicInfo.startDateTime).toLocaleDateString());
+        setTripDate(
+          new Date(trip.basicInfo.startDateTime).toLocaleDateString()
+        );
       } catch (err) {
         console.error("Failed to fetch trip in SavedPlaces:", err);
       }
@@ -44,7 +48,8 @@ const { saved, addPlace, removePlace, loading } = useSavedPlaces(tripId!);
     loadTrip();
   }, [tripId]);
 
-  const [focusCoord, setFocusCoord] = useState<google.maps.LatLngLiteral | null>(null);
+  const [focusCoord, setFocusCoord] =
+    useState<google.maps.LatLngLiteral | null>(null);
   const [mapZoom, setMapZoom] = useState(13);
   const [highlightId, setHighlight] = useState<string | null>(null);
   const [infoPlace, setInfoPlace] = useState<Place | null>(null);
@@ -54,7 +59,7 @@ const { saved, addPlace, removePlace, loading } = useSavedPlaces(tripId!);
       {saved.length === 0 ? (
         <p className="mt-6 text-center text-gray-500">No places saved yet.</p>
       ) : (
-        saved.map(p => (
+        saved.map((p) => (
           <div
             key={p.id}
             onMouseEnter={() => setHighlight(p.id)}
@@ -87,7 +92,7 @@ const { saved, addPlace, removePlace, loading } = useSavedPlaces(tripId!);
       zoom={mapZoom}
       infoPlace={infoPlace}
       onInfoClose={() => setInfoPlace(null)}
-      onMarkerClick={p => {
+      onMarkerClick={(p) => {
         setHighlight(p.id);
         setFocusCoord({ lat: p.lat, lng: p.lng });
         setMapZoom(15);

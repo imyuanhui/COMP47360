@@ -159,7 +159,7 @@ export default function ExplorePlaces() {
 
     (async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('accessToken');
         if (!token) return;
         setAuthToken(token);
 
