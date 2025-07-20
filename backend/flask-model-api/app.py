@@ -5,6 +5,7 @@ from linear import linear_predict
 from map_openweather_to_coco import map_openweather_to_coco
 from datetime import datetime
 from rf_predict import random_forest
+from xgb_predict import xgb_predict
 from fetch_interest import fetch_interest, get_cached_interest
 from xgboost import xgboost
 
@@ -56,12 +57,10 @@ def predict_randomforest():
         zone_id = data["zone_id"]
         zone_name = data["zone_name"]
         weather = data["weather"]
-
         temp = weather.get("temp")
         prcp = weather.get("prcp")
 
         print(f"[INFO] Received prediction request for zone_id={zone_id}, zone_name='{zone_name}'")
-#ADD
         # interest = fetch_interest(zone_name)
         interest = get_cached_interest(zone_name)
         score = random_forest(timestamp, zone_id, temp, prcp, interest)
@@ -72,28 +71,32 @@ def predict_randomforest():
         print(f"[ERROR] Prediction failed: {e}")
         return jsonify({"error": str(e)}), 400
 
-@app.route("predict/xgboost", methods=['POST'])
-def predict_xgbost():
+
+#ADD
+@app.route("/predict/xgb", methods=["POST"])
+def predict_xgb():
     try:
         data = request.get_json()
         timestamp = data["timestamp"]
         zone_id = data["zone_id"]
         zone_name = data["zone_name"]
         weather = data["weather"]
-
         temp = weather.get("temp")
         prcp = weather.get("prcp")
 
         print(f"[INFO] Received prediction request for zone_id={zone_id}, zone_name='{zone_name}'")
-
         interest = get_cached_interest(zone_name)
-        score = xgboost(timestamp, zone_id, temp, prcp, interest)
+        score = xgb_predict(timestamp, zone_id, temp, prcp, interest)
+
 
         return jsonify({"busyness_score": round(score, 2)})
 
     except Exception as e:
-        print(f"[ERROR] Prediction failed: {e}")
-        return jsonify({"error": str(e)}), 400
+
+        print(f"[ERROR] XGB prediction failed: {e}")
+        return jsonify({"error": str(e)}), 400    
+    
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

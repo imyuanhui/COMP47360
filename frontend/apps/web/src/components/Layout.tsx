@@ -67,7 +67,7 @@ export default function Layout({
         </button>
       </div>
 
-      <div className="h-screen overflow-x-hidden overflow-y-hidden md:flex">
+      <div className="h-screen overflow-x-hidden overflow-y-auto md:flex">
         {/* ───────────────────────── LEFT PANE ───────────────────────── */}
         <div className="w-full md:w-1/2 flex flex-col border-r border-gray-200">
 
@@ -96,7 +96,7 @@ export default function Layout({
             >
               <div className="absolute inset-0 flex items-end bg-black/30 p-6">
                 <div>
-                  <h2 className="text-3xl font-semibold text-white">
+                  <h2 className="text-2xl md:text-3xl font-semibold text-white">
                     {tripName || 'Your Trip'}
                   </h2>
                   {tripDate && (
