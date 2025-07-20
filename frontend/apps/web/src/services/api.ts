@@ -3,7 +3,7 @@ import type { Place, ItineraryItem, Preferences } from "../types";
 
 // === Axios Configuration ===
 const api = axios.create({
-  baseURL: "/api", 
+  baseURL: "/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -24,9 +24,8 @@ export function clearAuthToken() {
 }
 
 const authHeader = () => ({
-  Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+  Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
 });
-
 
 // === Auth Interfaces ===
 export interface UserPayload {
@@ -43,8 +42,8 @@ export interface LoginResponse {
 }
 
 // === Auth Endpoints ===
-export function signup(email: string, username: string, password: string) {
-  return api.post("/signup", { email, username, password }).then((r) => r.data);
+export function signup(username: string, email: string, password: string) {
+  return api.post("/signup", { username, email, password }).then((r) => r.data);
 }
 
 export function login(
@@ -149,10 +148,10 @@ export interface Visit {
 export interface TripDetails {
   basicInfo: Trip;
   destinations: {
-    tripId: string,
-    destinationId: number,
-    destinationName: string,
-    visitTime: string
+    tripId: string;
+    destinationId: number;
+    destinationName: string;
+    visitTime: string;
   }[];
 }
 
@@ -214,7 +213,6 @@ export function deleteVisit(tripId: string, placeId: number): Promise<void> {
     .then(() => {});
 }
 
-
 // ------------------------
 // Destinations (Visits)
 // ------------------------
@@ -222,24 +220,28 @@ export function deleteVisit(tripId: string, placeId: number): Promise<void> {
 /**
  * Add a new destination (visit) to a trip.
  */
-export const addDestination = (tripId: string, destinationData: {
-  destinationName: string;
-  lat: number;
-  lon: number;
-  visitTime: string;
-}) => {
+export const addDestination = (
+  tripId: string,
+  destinationData: {
+    destinationName: string;
+    lat: number;
+    lon: number;
+    visitTime: string;
+  }
+) => {
   return api.post(`/trips/${tripId}/destinations`, destinationData);
 };
-
-
 
 /**
  * Update an existing destination (visit) of a trip.
  */
-export const updateDestination = (tripId: string, destinationData: {
-  destinationId: number;
-  visitTime: string;
-}) => {
+export const updateDestination = (
+  tripId: string,
+  destinationData: {
+    destinationId: number;
+    visitTime: string;
+  }
+) => {
   return api.put(`/trips/${tripId}/destinations`, destinationData);
 };
 
@@ -264,19 +266,21 @@ export function updatePreferences(prefs: Preferences): Promise<Preferences> {
 
 /** Get saved places for a trip */
 export function fetchSavedPlaces(tripId: string): Promise<Place[]> {
-  return api.get(`/trips/${tripId}/saved-places`).then(r => r.data);
+  return api.get(`/trips/${tripId}/saved-places`).then((r) => r.data);
 }
 
 /** Add a place to the saved list for a trip */
 export function addSavedPlace(tripId: string, place: Place): Promise<Place> {
-  return api.post(`/trips/${tripId}/saved-places`, place).then(r => r.data);
+  return api.post(`/trips/${tripId}/saved-places`, place).then((r) => r.data);
 }
 
 /** Remove a saved place from a trip */
-export function removeSavedPlace(tripId: string, placeId: string): Promise<void> {
+export function removeSavedPlace(
+  tripId: string,
+  placeId: string
+): Promise<void> {
   return api.delete(`/trips/${tripId}/saved-places/${placeId}`).then(() => {});
 }
-
 
 // === Auto Refresh Token on JWT Expiry ===
 api.interceptors.response.use(
@@ -313,7 +317,6 @@ api.interceptors.response.use(
         return Promise.reject(err);
       }
     }
-  
 
     return Promise.reject(error);
   }
