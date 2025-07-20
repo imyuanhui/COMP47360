@@ -35,11 +35,19 @@ public class AuthController {
             @RequestBody RegisterUserRequest request,
             UriComponentsBuilder uriBuilder) {
 
+        System.out.println("[SIGNUP] Received request: " + request);
+
         try {
-            var userDto = authService.register(userMapper.toEntity(request));
+            var userEntity = userMapper.toEntity(request);
+            System.out.println("[SIGNUP] Mapped to entity: " + userEntity);
+
+            var userDto = authService.register(userEntity);
+            System.out.println("[SIGNUP] Registered user: " + userDto);
+
             var uri = uriBuilder.path("/user/{id}").buildAndExpand(userDto.getId()).toUri();
             return ResponseEntity.created(uri).body(userDto);
         } catch (IllegalArgumentException e) {
+            System.out.println("[SIGNUP] Error: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("error", e.getMessage()));
         }
@@ -47,6 +55,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginUserRequest request) {
+
+        System.out.println("[LOGIN] Received request: " + request);
 
         try {
             var response = authService.login(request.getIdentifier(), request.getPassword());
@@ -60,6 +70,8 @@ public class AuthController {
     @PostMapping("/token/refresh")
     public ResponseEntity<?> refresh(@RequestBody Map<String, String> request) {
 
+        System.out.println("[REFRESH] Refresh token request received: " + request);
+
         try {
             var response = authService.refreshToken(request.get("refreshToken"));
             return ResponseEntity.ok(response);
@@ -68,34 +80,4 @@ public class AuthController {
                     .body(Map.of("error", e.getMessage()));
         }
     }
-
-//    @GetMapping("/oauth2/code/google")
-//    public void handleGoogleLogin(
-//            @AuthenticationPrincipal OAuth2User oAuth2User,
-//            HttpServletResponse response) throws IOException {
-//
-//        Logger logger = LoggerFactory.getLogger(getClass());
-//
-//        if (oAuth2User == null) {
-//            logger.error("OAuth2User is null — authentication not established.");
-//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "OAuth2User not found");
-//            return;
-//        }
-//
-//        // Log the full user attributes
-//        logger.info("OAuth2User attributes: {}", oAuth2User.getAttributes());
-//
-//        // Login logic
-//        Map<String, ?> result = authService.loginWithGoogle(oAuth2User);
-//        String accessToken = (String) result.get("accessToken");
-//        String refreshToken = (String) result.get("refreshToken");
-//
-//        // Build redirect URL for frontend OAuth2Redirect page
-//        String redirectUrl = "https://smarttrip.duckdns.org/oauth-success" +
-//                "?accessToken=" + URLEncoder.encode(accessToken, StandardCharsets.UTF_8) +
-//                "&refreshToken=" + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8);
-//
-//        // Redirect to frontend to store tokens
-//        response.sendRedirect(redirectUrl);
-//    }
 }

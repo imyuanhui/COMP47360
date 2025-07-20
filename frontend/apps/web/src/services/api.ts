@@ -24,7 +24,7 @@ export function clearAuthToken() {
 }
 
 const authHeader = () => ({
-  Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+  Authorization: `Bearer ${localStorage.getItem('token')}`,
 });
 
 
@@ -43,8 +43,8 @@ export interface LoginResponse {
 }
 
 // === Auth Endpoints ===
-export function signup(email: string, username: string, password: string) {
-  return api.post("/signup", { email, username, password }).then((r) => r.data);
+export function signup(username: string, email: string, password: string) {
+  return api.post("/signup", { username, email, password }).then((r) => r.data);
 }
 
 export function login(
@@ -52,7 +52,7 @@ export function login(
   password: string
 ): Promise<LoginResponse> {
   return api.post("/login", { identifier, password }).then((r) => {
-    localStorage.setItem("accessToken", r.data.accessToken);
+    localStorage.setItem("token", r.data.accessToken);
     localStorage.setItem("refreshToken", r.data.refreshToken);
     setAuthToken(r.data.accessToken);
     return r.data;
@@ -60,12 +60,12 @@ export function login(
 }
 
 export async function logout() {
-  const token = localStorage.getItem("accessToken");
+  const token = localStorage.getItem("token");
   if (!token) throw new Error("Token not found");
 
   setAuthToken(token);
 
-  localStorage.removeItem("accessToken");
+  localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
   clearAuthToken();
 }
@@ -300,14 +300,14 @@ api.interceptors.response.use(
         });
 
         const newAccessToken = res.data.accessToken;
-        localStorage.setItem("accessToken", newAccessToken);
+        localStorage.setItem("token", newAccessToken);
         setAuthToken(newAccessToken);
 
         originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (err) {
         console.error("Auto refresh failed:", err);
-        localStorage.removeItem("accessToken");
+        localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         window.location.href = "/login";
         return Promise.reject(err);

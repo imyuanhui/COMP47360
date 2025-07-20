@@ -114,7 +114,7 @@ const handleSmartSubmit = async () => {
   try {
     setLoading(true);
 
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Not authenticated");
       return;
@@ -288,7 +288,6 @@ const endDateTime = `${dateStr}T23:59:00`;
       console.warn("API logout failed, clearing token anyway");
     } finally {
       localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
       toast.success("Logged out");
       navigate("/");
       setLoggingOut(false);
@@ -425,10 +424,10 @@ const endDateTime = `${dateStr}T23:59:00`;
         <>
           <div className="bg-white p-4 rounded-lg shadow">
            <p className="text-sm text-gray-500 mb-1">Username</p>
-<p className="font-medium text-lg">{profile.email}</p>
+<p className="font-medium text-lg">{profile.username}</p>
 
 <p className="text-sm text-gray-500 mt-4 mb-1">Email</p>
-<p className="font-medium text-lg">{profile.username}</p>
+<p className="font-medium text-lg">{profile.email}</p>
 
             <p className="text-sm text-gray-500 mt-4 mb-1">Subscription</p>
             <p className="font-semibold text-green-600">Premium</p>
