@@ -25,9 +25,15 @@ def _build_payload(req: dict) -> dict:
     return payload
 
 # ----------- One-hot align -----------
+
 def _onehot_align(df_raw: pd.DataFrame) -> pd.DataFrame:
     category_cols = ['zone_id', 'hour', 'weekday', 'month', 'coco_group', 'category_top']
     available_cols = [col for col in category_cols if col in df_raw.columns]
+
+    #ADD
+    for col in ['zone_tourist_count', 'tourist_ratio']:
+        if col in df_raw.columns:
+            df_raw[col] = pd.to_numeric(df_raw[col], errors='coerce').fillna(0)
 
     for col in available_cols:
         df_raw[col] = df_raw[col].astype(str)
@@ -39,6 +45,7 @@ def _onehot_align(df_raw: pd.DataFrame) -> pd.DataFrame:
         dummies[col] = 0
 
     return dummies[FEATURES_R]
+
 
 # ----------- XGBoost prediction function -----------
 def xgb_predict(timestamp, zone_id, temp, prcp, interest, zone_tourist_count=None, tourist_ratio=None):
