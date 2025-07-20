@@ -73,7 +73,7 @@ export function usePlacesSearch() {
         const req: google.maps.places.PlaceSearchRequest = {
           location,
           radius,
-          type: 'tourist_attraction',
+          type: 'tourist_attraction OR museum OR restaurant OR cafe',
         };
 
         svc.nearbySearch(req, (results, status) => {

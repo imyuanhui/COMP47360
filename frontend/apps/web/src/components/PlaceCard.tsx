@@ -85,9 +85,16 @@ export default function PlaceCard({
       <div className="flex">
         {/* ---------- Place Image ---------- */}
         <img
-          src={place.imageUrl || '/placeholder.jpg'}
+          src={place.imageUrl || '/assets/logo.jpg'}
           alt={place.name}
           className="mr-4 min-h-24 h-auto w-24 flex-shrink-0 rounded-lg object-cover"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.onerror = null; // Prevent infinite loop if logo.jpg fails
+            target.src = '/assets/logo.jpg';
+            target.classList.remove('object-cover');
+            target.classList.add('object-contain', 'bg-white');
+          }}
         />
 
         {/* ---------- Content Area ---------- */}
