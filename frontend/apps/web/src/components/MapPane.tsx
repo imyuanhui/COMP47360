@@ -123,6 +123,7 @@ interface Props {
   saved?: Place[];
   onToggleSave?: (place: Place) => void;
   onAddToItinerary?: (place: Place, time: string) => void;
+  onRemoveFromItinerary?: (place: Place) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -138,6 +139,7 @@ export default function MapPane({
   saved = [],
   onToggleSave,
   onAddToItinerary,
+  onRemoveFromItinerary
 }: Props) {
   /* ---------------- Script loader ---------------- */
   const { isLoaded, loadError } = useLoadScript({
@@ -328,6 +330,15 @@ export default function MapPane({
                   {saved.some(p => p.id === infoPlace.id)
                     ? 'Remove from Saved Places'
                     : 'Add to Saved Places'}
+                </button>
+              )}
+
+              {onRemoveFromItinerary && (
+                <button
+                  onClick={() => onRemoveFromItinerary(infoPlace)}
+                  className="mt-2 bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1 text-xs rounded w-full"
+                >
+                  Remove from My Itinerary
                 </button>
               )}
 
