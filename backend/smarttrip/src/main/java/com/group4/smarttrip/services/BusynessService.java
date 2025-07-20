@@ -6,6 +6,7 @@ import com.group4.smarttrip.entities.Zone;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -22,6 +23,9 @@ public class BusynessService {
     private final FlowService flowService;
 
     private final RestTemplate restTemplate = new RestTemplate();
+
+    @Value("${ml.service.url}")
+    private String mlServiceUrl;
 
     public ZoneBusynessDto getCurrentBusynessByZone(Long zoneId) {
         System.out.println("Fetching current busyness for zone ID: " + zoneId);
@@ -140,7 +144,10 @@ public class BusynessService {
         // deploy
 //        String url = "http://flask-ml:5000/predict/xgb";
         // local test
-        String url = "http://127.0.0.1:5000/predict/xgb";
+        // String url = "http://127.0.0.1:5000/predict/xgb";
+        String url = mlServiceUrl + "/predict/xgb";
+
+
         Map<String, Object> responseBody = restTemplate.postForObject(url, requestBody, Map.class);
         System.out.println("Received response from model: " + responseBody);
 
