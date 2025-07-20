@@ -7,6 +7,7 @@ from datetime import datetime
 from rf_predict import random_forest
 from xgb_predict import xgb_predict
 from fetch_interest import fetch_interest, get_cached_interest
+from xgboost import xgboost
 
 app = Flask(__name__)
 
@@ -70,6 +71,7 @@ def predict_randomforest():
         print(f"[ERROR] Prediction failed: {e}")
         return jsonify({"error": str(e)}), 400
 
+
 #ADD
 @app.route("/predict/xgb", methods=["POST"])
 def predict_xgb():
@@ -86,14 +88,15 @@ def predict_xgb():
         interest = get_cached_interest(zone_name)
         score = xgb_predict(timestamp, zone_id, temp, prcp, interest)
 
+
         return jsonify({"busyness_score": round(score, 2)})
 
     except Exception as e:
+
         print(f"[ERROR] XGB prediction failed: {e}")
         return jsonify({"error": str(e)}), 400    
     
-    
-    
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
