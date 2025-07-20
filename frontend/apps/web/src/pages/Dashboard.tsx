@@ -425,10 +425,10 @@ const endDateTime = `${dateStr}T23:59:00`;
         <>
           <div className="bg-white p-4 rounded-lg shadow">
            <p className="text-sm text-gray-500 mb-1">Username</p>
-<p className="font-medium text-lg">{profile.email}</p>
+<p className="font-medium text-lg">{profile.username}</p>
 
 <p className="text-sm text-gray-500 mt-4 mb-1">Email</p>
-<p className="font-medium text-lg">{profile.username}</p>
+<p className="font-medium text-lg">{profile.email}</p>
 
             <p className="text-sm text-gray-500 mt-4 mb-1">Subscription</p>
             <p className="font-semibold text-green-600">Premium</p>
