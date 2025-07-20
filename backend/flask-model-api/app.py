@@ -7,7 +7,6 @@ from datetime import datetime
 from rf_predict import random_forest
 from xgb_predict import xgb_predict
 from fetch_interest import fetch_interest, get_cached_interest
-from xgboost import xgboost
 
 app = Flask(__name__)
 
