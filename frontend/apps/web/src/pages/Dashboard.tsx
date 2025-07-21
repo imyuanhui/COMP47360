@@ -379,7 +379,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen overflow-y-auto hide-scrollbar bg-white text-gray-900 font-sans container mx-auto px-2 md:px-4">
+    <div className="min-h-screen overflow-y-auto hide-scrollbar bg-white text-gray-900 font-sans container mx-auto px-6 sm:px-6 md:px-8">
       {showBot && (
         <div className="fixed bottom-20 right-6 w-80 bg-white shadow-2xl rounded-lg z-50 flex flex-col max-h-[70vh] overflow-hidden border">
           <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-3 shadow-md drop-shadow-md flex justify-between items-center">
@@ -570,19 +570,19 @@ export default function Dashboard() {
       <header className="flex justify-between items-center mb-8 pt-6">
         <div className="flex items-center gap-3">
           <img src="/assets/logo.jpg" alt="Logo" className="h-8 w-8" />
-          <h1 className="text-2xl font-bold text-[#03253D]">SmartTrip NYC</h1>
+          <h1 className="text-xl font-bold text-[#03253D]">SmartTrip NYC</h1>
         </div>
         <div className="space-x-4">
           <button
             onClick={() => setShowProfile(true)}
-            className="text-gray-600 hover:text-gray-800"
+            className="text-sm hover:text-gray-800"
           >
             Profile
           </button>
           <button
             onClick={handleLogout}
             disabled={loggingOut}
-            className="text-gray-600 hover:text-red-600"
+            className="text-sm hover:text-red-600"
           >
             {loggingOut ? "Logging out..." : "Logout"}
           </button>
@@ -673,7 +673,7 @@ export default function Dashboard() {
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
             <h2 className="text-lg font-semibold mb-3">
-              Smart Itinerary Generator
+              Generate your trip with AI
             </h2>
             <input
               value={smartInput}
@@ -831,10 +831,10 @@ export default function Dashboard() {
               e.stopPropagation();
               setShowModal(true);
             }}
-            className="w-56 bg-[#03253D] text-white px-6 py-2 rounded-full
+            className="w-48 bg-[#03253D] text-white px-6 py-2 rounded-full
                text-sm font-semibold shadow hover:bg-[#021a2a] transition"
           >
-            + Plan a New Trip
+            Plan a New Trip
           </button>
 
           {/* SMART button – give it the same width for consistency */}
@@ -843,11 +843,11 @@ export default function Dashboard() {
               e.stopPropagation();
               setShowSmartModal(true);
             }}
-            className="w-56 bg-gradient-to-r from-purple-500 to-blue-500 text-white
+            className="w-48 bg-gradient-to-r from-purple-500 to-blue-500 text-white
                px-6 py-2 rounded-full text-sm font-semibold shadow
                hover:opacity-90 transition"
           >
-            ✨ Generate with AI
+            ✨ Generate with AI
           </button>
         </div>
       </div>
@@ -856,11 +856,11 @@ export default function Dashboard() {
       <div className="mt-12">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-[#03253D]">
-            Trending Places in NYC
+            Watch Trending Places in NYC on TikTok
           </h2>
           <button
             onClick={shuffleVideos}
-            className="bg-[#03253D] text-white px-6 py-2 rounded-full shadow hover:bg-[#021a2a] transition"
+            className="bg-[#03253D] text-sm text-white px-6 py-2 rounded-full shadow hover:bg-[#021a2a] transition"
           >
             Refresh Videos
           </button>
