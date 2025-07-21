@@ -56,7 +56,7 @@ export function useItinerary(tripId: string) {
       })
     );
 
-    // filter failed items（status !== "fulfilled" 或 value 为 null）
+    // filter failed items（status !== "fulfilled" or value is null）
     return settled
       .filter((r) => r.status === "fulfilled" && r.value !== null)
       .map((r) => (r as PromiseFulfilledResult<Entry>).value);
