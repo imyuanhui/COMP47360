@@ -1,7 +1,7 @@
 {
-  "temp_hist": 15.650227272727271,
-  "prcp_hist": 0.18829545454545454,
-  "fare_amount_hist": 21.99223435567929,
-  "trip_distance_hist": 6.714650800907643,
-  "has_congestion_surcharge_hist": 0.9143864469028784
+  "temp_hist": 14.334655172413793,
+  "prcp_hist": 0.11137931034482759,
+  "fare_amount_hist": 12.63190080275042,
+  "trip_distance_hist": 2.4531424833049034,
+  "has_congestion_surcharge_hist": 0.5760572155352609
 }

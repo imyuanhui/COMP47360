@@ -85,10 +85,17 @@ def predict_xgb():
 
         print(f"[INFO] Received prediction request for zone_id={zone_id}, zone_name='{zone_name}'")
         interest = get_cached_interest(zone_name)
-        score = xgb_predict(timestamp, zone_id, temp, prcp, interest)
 
+        result = xgb_predict(timestamp, zone_id, temp, prcp, interest)
 
-        return jsonify({"busyness_score": round(score, 2)})
+        return jsonify(result)
+        #---result show now------
+        #         {
+        # "busyness_score": 3125.73,
+        # "busyness_level": "High"
+        # }
+        #--------------------
+        
 
     except Exception as e:
 
