@@ -12,6 +12,7 @@
  *********************************************************************/
 
 import React, { useEffect, useRef, useState } from 'react';
+import type { Place, BusynessLevel } from '../types';
 import {
   GoogleMap,
   InfoWindow,
@@ -19,7 +20,6 @@ import {
   useLoadScript,
 } from '@react-google-maps/api';
 import axios from 'axios';
-import type { Place } from '../types';
 import { cache } from '../services/useBusyness';     // 🆕 shared cache
 
 /* ------------------------------------------------------------------ */
@@ -111,7 +111,8 @@ const removeBtn  = `${baseBtn} bg-red-100 text-red-700 hover:bg-red-200`;
 /* Component props                                                     */
 /* ------------------------------------------------------------------ */
 interface Props {
-  places: Place[];
+ places: (Place & { busynessLevel: BusynessLevel })[];
+
   focusCoord: google.maps.LatLngLiteral | null;
   zoom: number;
 
@@ -150,8 +151,10 @@ export default function MapPane({
   /* ---------------- Local state ---------------- */
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  type WithBusyness = Place & { busynessLevel: string };
-  const [withLevels, setWithLevels] = useState<WithBusyness[]>([]);
+  type BusynessLevel = 'low' | 'med' | 'high' | 'unknown' | 'loading';
+type WithBusyness = Place & { busynessLevel: BusynessLevel };
+const withLevels: WithBusyness[] = places;
+
 
   const [filter, setFilter] = useState({
     high: true,
@@ -172,48 +175,59 @@ export default function MapPane({
   }, [openMenu]);
 
   /* ---------------- Fetch predictions (cached) ---------------- */
-  useEffect(() => {
-    if (!places.length) { setWithLevels([]); return; }
+//  useEffect(() => {
+//   const fetchBusyness = async () => {
+//     const isValidBusynessLevel = (val: any): val is BusynessLevel =>
+//       ['low', 'med', 'high', 'loading', 'unknown'].includes(val);
 
-    /* ---------------------------------------------------------- */
-    /* 1️⃣  Immediately populate with *loading* markers so the map
-     *     never appears empty while requests are in‑flight.
-     * ---------------------------------------------------------- */
-    setWithLevels(
-      places.map(p => {
-        const key = `${p.lat},${p.lng}`;
-        return {
-          ...p,
-          busynessLevel: cache.has(key) ? cache.get(key)! : 'loading',
-        };
-      }),
-    );
+//     const updated: WithBusyness[] = await Promise.all(
+//       places.map(async (p) => {
+//         let level: BusynessLevel = 'unknown';
+
+//         // Use existing valid level if present
+//         if (isValidBusynessLevel(p.busynessLevel) && p.busynessLevel !== 'unknown') {
+//           level = p.busynessLevel;
+//         } else {
+//           const cached = cache.get(p.id);
+//           if (isValidBusynessLevel(cached)) {
+//             level = cached;
+//           } else {
+//             try {
+//               // Add loading marker temporarily
+//               const loadingPlace: WithBusyness = { ...p, busynessLevel: 'loading' };
+//               setWithLevels((prev) => [
+//                 ...prev.filter((pl) => pl.id !== p.id),
+//                 loadingPlace,
+//               ]);
+
+//               const res = await axios.get(`/api/busyness?lat=${p.lat}&lng=${p.lng}`);
+//               const fetched = res.data.level;
+//               if (isValidBusynessLevel(fetched)) {
+//                 level = fetched;
+//                 cache.set(p.id, fetched);
+//               }
+//             } catch (err) {
+//               console.warn('Busyness fetch failed for', p.name, err);
+//             }
+//           }
+//         }
+
+//         return { ...p, busynessLevel: level };
+//       })
+//     );
+
+//     setWithLevels(updated);
+//   };
+
+//   fetchBusyness();
+// }, [places]);
+
+
 
     /* ---------------------------------------------------------- */
     /* 2️⃣  Fetch predictions for any coordinates not cached yet,
      *     then patch state *incrementally*.
      * ---------------------------------------------------------- */
-    places.forEach(async p => {
-      const key = `${p.lat},${p.lng}`;
-      if (cache.has(key)) return;                        // already have it
-
-      try {
-        const { data } = await axios.get(`/api/busyness?lat=${p.lat}&lon=${p.lng}`);
-        const level = Array.isArray(data) ? data[0]?.busynessLevel : data.busynessLevel;
-        const val   = level ?? 'unknown';
-
-        if (val !== 'unknown') cache.set(key, val);
-
-        setWithLevels(prev =>
-          prev.map(row => (row.id === p.id ? { ...row, busynessLevel: val } : row)),
-        );
-      } catch {
-        setWithLevels(prev =>
-          prev.map(row => (row.id === p.id ? { ...row, busynessLevel: 'unknown' } : row)),
-        );
-      }
-    });
-  }, [places]);
 
   /* ---------------- Map centring / zoom ---------------- */
   const centre =
@@ -275,18 +289,36 @@ export default function MapPane({
       >
         {/* --- markers --- */}
         {withLevels
-          .filter(p => {
-            const lvl = p.busynessLevel === 'loading' ? 'unknown' : p.busynessLevel;
-            return filter[lvl as keyof typeof filter];
-          })
-          .map(p => (
-            <Marker
-              key={p.id}
-              position={{ lat: p.lat, lng: p.lng }}
-              icon={markerIcon(p.busynessLevel)}
-              onClick={() => onMarkerClick(p)}
-            />
-          ))}
+  .filter((p: WithBusyness) => {
+  let lvl: keyof typeof filter;
+
+  if (p.busynessLevel === 'loading') {
+    lvl = 'unknown';
+  } else if (
+    p.busynessLevel === 'low' ||
+    p.busynessLevel === 'med' ||
+    p.busynessLevel === 'high' ||
+    p.busynessLevel === 'unknown'
+  ) {
+    lvl = p.busynessLevel;
+  } else {
+    lvl = 'unknown';
+  }
+
+  return filter[lvl];
+})
+
+
+
+  .map(p => (
+    <Marker
+      key={p.id}
+      position={{ lat: p.lat, lng: p.lng }}
+      icon={markerIcon(p.busynessLevel)}
+      onClick={() => onMarkerClick(p)}
+    />
+  ))}
+
 
         {/* --- InfoWindow that displays when clicking place in Explore Places--- */}
         {infoPlace && (
@@ -310,7 +342,8 @@ export default function MapPane({
                 return (
                   <p className="text-xs text-gray-600">
                     Busyness:{' '}
-                    {level === 'loading' ? (
+                    {(level as BusynessLevel) === 'loading' ? (
+
                       <span>Loading…</span>
                     ) : (
                       <span className={levelClass}>{level ?? '…'}</span>
