@@ -5,7 +5,7 @@ export interface TravelTimes {
   drive: number;
   transit: number;
 }
-
+export type BusynessLevel = 'low' | 'med' | 'high' | 'unknown' | 'loading';
 export interface Place {
   id: string;
   name: string;
@@ -19,7 +19,9 @@ export interface Place {
   rating?: number;
   imageUrl?: string;
   travel: TravelTimes
+   busynessLevel?: BusynessLevel;
   /* add other fields here … */
+
 }
 
 export interface ItineraryItem {
