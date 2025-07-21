@@ -21,10 +21,45 @@ export function useItinerary(tripId: string) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Extract time "HH:mm" from ISO datetime string
   const extractTime = (isoString: string) => {
     if (!isoString) return "";
     return isoString.slice(11, 16);
+  };
+
+  // encapsule enrichment function，and use Promise.allSettled
+  const enrichDestinations = async (destinations: any[]): Promise<Entry[]> => {
+    const settled = await Promise.allSettled(
+      destinations.map(async (d) => {
+        try {
+          const results = await searchText(d.destinationName, DEFAULT_CENTRE);
+          const googlePlace = results?.[0];
+
+          return {
+            place: {
+              id: d.destinationId.toString(),
+              name: d.destinationName,
+              lat: googlePlace?.lat ?? 0,
+              lng: googlePlace?.lng ?? 0,
+              address: googlePlace?.address ?? "",
+              imageUrl: googlePlace?.imageUrl ?? "/placeholder.jpg",
+              rating: googlePlace?.rating ?? 0,
+              crowdTime: "",
+              visitTime: d.visitTime || "",
+              travel: { walk: 0, drive: 0, transit: 0 },
+            },
+            time: extractTime(d.visitTime || ""),
+          };
+        } catch (e) {
+          console.warn("Failed to enrich place:", d.destinationName, e);
+          return null; // skip this one
+        }
+      })
+    );
+
+    // filter failed items（status !== "fulfilled" 或 value 为 null）
+    return settled
+      .filter((r) => r.status === "fulfilled" && r.value !== null)
+      .map((r) => (r as PromiseFulfilledResult<Entry>).value);
   };
 
   useEffect(() => {
@@ -38,32 +73,7 @@ export function useItinerary(tripId: string) {
         setAuthToken(token);
 
         const trip = await fetchTripDetails(tripId);
-
-        // For each destination from backend, get enriched data from Google Places
-        const enrichedItems: Entry[] = await Promise.all(
-          trip.destinations.map(async (d) => {
-            // Search Google Places by destination name + location
-            const results = await searchText(d.destinationName, DEFAULT_CENTRE);
-            const googlePlace = results?.[0]; // first match
-
-            return {
-              place: {
-                id: d.destinationId.toString(),
-                name: d.destinationName,
-                lat: googlePlace?.lat ?? 0,
-                lng: googlePlace?.lng ?? 0,
-                address: googlePlace?.address ?? '',
-                imageUrl: googlePlace?.imageUrl ?? '/placeholder.jpg',
-                rating: googlePlace?.rating ?? 0,
-                crowdTime: '',
-                visitTime: d.visitTime || '',
-                travel: { walk: 0, drive: 0, transit: 0 },
-              },
-              time: extractTime(d.visitTime || ''),
-            };
-          })
-        );
-
+        const enrichedItems = await enrichDestinations(trip.destinations);
         setEntries(enrichedItems);
       } catch (error) {
         console.error("Error loading itinerary:", error);
@@ -75,15 +85,14 @@ export function useItinerary(tripId: string) {
     loadItinerary();
   }, [tripId, isReady, searchText]);
 
-  // Add and remove remain the same but re-fetch enriched itinerary after add/remove
-
   const add = async (place: Place, time: string) => {
     try {
-       const count = entries.filter(e => e.time === time).length;
-    if (count >= 3) {
-      alert(`Only three places allowed at ${time}.`);
-      return false;
-    }
+      const count = entries.filter((e) => e.time === time).length;
+      if (count >= 3) {
+        alert(`Only three places allowed at ${time}.`);
+        return false;
+      }
+
       const todayStr = new Date().toISOString().slice(0, 10);
       const visitTime = `${todayStr}T${time}:00`;
 
@@ -97,30 +106,8 @@ export function useItinerary(tripId: string) {
 
       await addDestination(tripId, payload);
 
-      // Reload with enrichment
       const trip = await fetchTripDetails(tripId);
-      const enrichedItems: Entry[] = await Promise.all(
-        trip.destinations.map(async (d) => {
-          const results = await searchText(d.destinationName, DEFAULT_CENTRE);
-          const googlePlace = results?.[0];
-
-          return {
-            place: {
-              id: d.destinationId.toString(),
-              name: d.destinationName,
-              lat: googlePlace?.lat ?? 0,
-              lng: googlePlace?.lng ?? 0,
-              address: googlePlace?.address ?? '',
-              imageUrl: googlePlace?.imageUrl ?? '/placeholder.jpg',
-              rating: googlePlace?.rating ?? 0,
-              crowdTime: '',
-              visitTime: d.visitTime || '',
-              travel: { walk: 0, drive: 0, transit: 0 },
-            },
-            time: extractTime(d.visitTime || ''),
-          };
-        })
-      );
+      const enrichedItems = await enrichDestinations(trip.destinations);
       setEntries(enrichedItems);
 
       return true;
@@ -136,28 +123,7 @@ export function useItinerary(tripId: string) {
       await deleteDestination(tripId, parseInt(placeId));
 
       const trip = await fetchTripDetails(tripId);
-      const enrichedItems: Entry[] = await Promise.all(
-        trip.destinations.map(async (d) => {
-          const results = await searchText(d.destinationName, DEFAULT_CENTRE);
-          const googlePlace = results?.[0];
-
-          return {
-            place: {
-              id: d.destinationId.toString(),
-              name: d.destinationName,
-              lat: googlePlace?.lat ?? 0,
-              lng: googlePlace?.lng ?? 0,
-              address: googlePlace?.address ?? '',
-              imageUrl: googlePlace?.imageUrl ?? '/placeholder.jpg',
-              rating: googlePlace?.rating ?? 0,
-              crowdTime: '',
-              visitTime: d.visitTime || '',
-              travel: { walk: 0, drive: 0, transit: 0 },
-            },
-            time: extractTime(d.visitTime || ''),
-          };
-        })
-      );
+      const enrichedItems = await enrichDestinations(trip.destinations);
       setEntries(enrichedItems);
     } catch (error) {
       console.error("Error removing from itinerary:", error);
