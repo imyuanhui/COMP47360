@@ -24,6 +24,8 @@ import { usePlacesSearch } from '../services/usePlacesSearch';
 import { useItinerary }   from '../services/useItinerary';
 import { fetchTripDetails, setAuthToken } from '../services/api';
 import { fetchBusynessLevel } from '../services/useBusyness';   // NEW
+import type { BusynessLevel } from '../types';
+
 
 /* ------------------------------------------------------------------ */
 /* Constants */
@@ -50,7 +52,7 @@ type FilterType = typeof FILTER_OPTIONS[number]['type'];
 
 /* NEW — busyness levels */
 const BUSYNESS_LEVELS = ['low', 'med', 'high'] as const;
-type BusynessLevel = typeof BUSYNESS_LEVELS[number];
+
 
 /* =========================================================================
  * Component
@@ -102,6 +104,25 @@ export default function ExplorePlaces() {
         : [...prev, place],
     );
   };
+  const isBusynessLevel = (value: any): value is BusynessLevel =>
+  ['low', 'med', 'high', 'unknown'].includes(value);
+
+async function enrichWithBusyness(
+  places: Place[]
+): Promise<(Place & { busynessLevel: BusynessLevel })[]> {
+  return await Promise.all(
+    places.map(async (p) => {
+      const rawLevel = await fetchBusynessLevel(p.lat, p.lng);
+      const level = isBusynessLevel(rawLevel) ? rawLevel : ('unknown' as BusynessLevel);
+
+      return {
+        ...p,
+        busynessLevel: level,
+      };
+    })
+  );
+}
+
 
   /* Load saved list on mount */
   useEffect(() => {
@@ -202,12 +223,17 @@ export default function ExplorePlaces() {
 
     return () => { cancelled = true; };
   }, [isReady, query, filters, applyBusyness, searchText]);
-
-  /* Merge search + recommended and de‑duplicate by id */
-  const combined: Place[] = [
+  useEffect(() => {
+  const merged = [
     ...searchResults,
     ...recommended.filter(r => !searchResults.some(s => s.id === r.id)),
   ];
+  enrichWithBusyness(merged).then(setCombined);
+}, [searchResults, recommended]);
+
+  /* Merge search + recommended and de‑duplicate by id */
+  const [combined, setCombined] = useState<(Place & { busynessLevel: BusynessLevel })[]>([]);
+
 
   /* Reinstate the size of the hero image after 5 seconds */
   const handleCardHover = () => {
