@@ -68,7 +68,7 @@ public class BusynessController {
             }
 
             Long zoneId = nearestZone.getZoneId();
-            logger.info("Nearest zone found: ID={}, name={}", zoneId, nearestZone.getName());
+            logger.info("Nearest zone found: ID={}, name={}", zoneId, nearestZone.getZoneName());
 
             ZoneBusynessDto dto;
             if (timestamp == null) {
