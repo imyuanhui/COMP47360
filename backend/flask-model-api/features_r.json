@@ -12,6 +12,8 @@
   "total_poi",
   "zone_tourist_count",
   "tourist_ratio",
+  "log_total_poi",
+  "poi_bin",
   "has_congestion_surcharge_hist",
   "fare_amount_hist",
   "trip_distance_hist",
