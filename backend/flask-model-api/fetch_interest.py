@@ -58,29 +58,28 @@ if DEFAULT_ZONE_FILE.exists():
 def get_cached_interest(zone_name):
     today_str = datetime.now().strftime("%Y-%m-%d")
     
-    # Read cache if exists and is today
+    # Read cache if exists and is for today
     if CACHE_FILE.exists():
         with open(CACHE_FILE) as f:
             cache = json.load(f)
-        if cache.get("data") == today_str:
+
+        if cache.get("date") == today_str:
             data = cache.get("data", {})
             if zone_name in data:
                 print(f"[CACHE] Using cached interest for {zone_name}")
                 return data[zone_name]
     else:
         cache = {"date": today_str, "data": {}}
-    
+
     print(f"[FETCH] No cache or expired. Fetching new data for {zone_name}")
     interest = fetch_interest(zone_name)
-    
+
     if interest != DEFAULT_INTEREST:
-        # 成功抓到 trends
         cache["data"][zone_name] = interest
         with open(CACHE_FILE, "w") as f:
             json.dump(cache, f)
         return interest
     else:
-        # call 失敗 → fallback
         fallback = default_zone_interest_map.get(zone_name, DEFAULT_INTEREST)
         print(f"[FALLBACK] Using default average for {zone_name}: {fallback}")
         return fallback

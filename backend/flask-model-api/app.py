@@ -83,35 +83,20 @@ def predict_xgb():
         weather = data["weather"]
         temp = weather.get("temp")
         prcp = weather.get("prcp")
-        flow_features = data.get("flow_features", {})
-        zone_tourist_count = flow_features.get("zone_tourist_count", 0)
-        tourist_ratio = flow_features.get("tourist_ratio", 0)
 
         print(f"[INFO] Received prediction request for zone_id={zone_id}, zone_name='{zone_name}'")
         interest = get_cached_interest(zone_name)
-        print(f"[INFO] Interest value: {interest}")
 
         
-        result = xgb_predict(
-            timestamp=timestamp,
-            zone_id=zone_id,
-            temp=temp,
-            prcp=prcp,
-            interest=interest,
-            zone_tourist_count=zone_tourist_count,
-            tourist_ratio=tourist_ratio
-        )
+        result = xgb_predict(timestamp, zone_id, temp, prcp, interest, 0, 0)
         print(f" Prediction result: {result}")
 
+        print(f"[DEBUG] Prediction score: {result}")
         return jsonify(result)
-        
-        # Low : if flow < 1512
-        # Medium: if 1512 < flow < 5094
-        # High: if flow > 5094
 
     except Exception as e:
-
-        print(f"[ERROR] XGB prediction failed: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 400
     
 

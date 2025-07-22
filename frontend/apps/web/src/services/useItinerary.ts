@@ -34,12 +34,24 @@ export function useItinerary(tripId: string) {
           const results = await searchText(d.destinationName, DEFAULT_CENTRE);
           const googlePlace = results?.[0];
 
+          /* --------------------------------------------------------------
+           * Prefer AI-supplied coordinates, then Google Places, then 0,0
+           * -------------------------------------------------------------- */
+          const lat =
+            typeof d.lat === "number" && d.lat
+              ? d.lat
+              : googlePlace?.lat ?? 0;
+          const lon =
+            typeof d.lon === "number" && d.lon
+              ? d.lon
+              : googlePlace?.lng ?? 0;
+
           return {
             place: {
               id: d.destinationId.toString(),
               name: d.destinationName,
-              lat: googlePlace?.lat ?? 0,
-              lng: googlePlace?.lng ?? 0,
+              lat,
+              lng: lon,
               address: googlePlace?.address ?? "",
               imageUrl: googlePlace?.imageUrl ?? "/placeholder.jpg",
               rating: googlePlace?.rating ?? 0,
