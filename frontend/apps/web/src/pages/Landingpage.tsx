@@ -233,7 +233,7 @@ export default function LandingPage() {
       {/* Log In Modal */}
       {showLogin && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-lg animate-fadeIn relative">
+          <div className="bg-white w-[90%] max-w-md p-6 rounded-lg shadow-lg animate-fadeIn relative mx-4 sm:mx-0">
             <button
               onClick={() => setShowLogin(false)}
               className="absolute top-3 right-4 text-xl text-gray-500 hover:text-gray-800 transition"
@@ -294,7 +294,7 @@ export default function LandingPage() {
       {/* Sign Up Modal */}
       {showSignup && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-lg animate-fadeIn relative">
+          <div className="bg-white w-[90%] max-w-md p-6 rounded-lg shadow-lg animate-fadeIn relative mx-4 sm:mx-0">
             <button
               onClick={() => setShowSignup(false)}
               className="absolute top-3 right-4 text-xl text-gray-500 hover:text-gray-800 transition"

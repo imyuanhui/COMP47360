@@ -16,11 +16,29 @@ import MapPane from '../components/MapPane';
 import { useItinerary } from '../services/useItinerary';
 import { fetchTripDetails, setAuthToken } from '../services/api';
 import type { Place } from '../types';
+import { fetchBusynessLevel } from '../services/useBusyness';
+import type { BusynessLevel } from '../types';
+
 
 /* ---------- Constants ---------- */
 const SLOTS = Array.from({ length: 10 }, (_, i) =>
   `${(9 + i).toString().padStart(2, '0')}:00`, // Generates time slots from 09:00 to 18:00
 );
+const isBusynessLevel = (value: any): value is BusynessLevel =>
+  ['low', 'med', 'high', 'unknown'].includes(value);
+
+async function enrichWithBusyness(
+  places: Place[]
+): Promise<(Place & { busynessLevel: BusynessLevel })[]> {
+  return await Promise.all(
+    places.map(async (p) => {
+      const rawLevel = await fetchBusynessLevel(p.lat, p.lng);
+      const level = isBusynessLevel(rawLevel) ? rawLevel : 'unknown';
+      return { ...p, busynessLevel: level };
+    })
+  );
+}
+
 
 const DEFAULT_CENTRE: google.maps.LatLngLiteral = {
   lat: 40.7422,
@@ -36,7 +54,7 @@ export default function MyItinerary() {
   // Store trip name and date
   const [tripName, setTripName] = useState('Your Trip');
   const [tripDate, setTripDate] = useState('Date not set');
-
+  
   /* ---------- Load Trip Details ---------- */
   useEffect(() => {
     if (!tripId) return;
@@ -63,7 +81,12 @@ export default function MyItinerary() {
   if (!tripId) return <div>Error: No trip selected.</div>;
 
   /* ---------- Itinerary State ---------- */
-  const { entries, remove } = useItinerary(tripId); // Custom hook to get/remove itinerary entries
+  const { entries, remove } = useItinerary(tripId);
+  const [placesWithBusyness, setPlacesWithBusyness] = useState<(Place & { busynessLevel: BusynessLevel })[]>([]);
+useEffect(() => {
+  const allPlaces = entries.map(e => e.place);
+  enrichWithBusyness(allPlaces).then(setPlacesWithBusyness);
+}, [entries]); // Custom hook to get/remove itinerary entries
   
   const [focusCoord, setFocusCoord] = useState<google.maps.LatLngLiteral | null>(null); // Map focus
   const [mapZoom, setMapZoom] = useState(13);                                            // Map zoom level
@@ -165,8 +188,10 @@ const buildMapsUrl = (): string | null => {
 
   /* ---------- Right Panel: Map and Interactions ---------- */
   const right = (
-    <MapPane
-      places={entries.map(e => e.place)}            // All itinerary places as markers
+   <MapPane
+  places={placesWithBusyness}
+
+           // All itinerary places as markers
       focusCoord={focusCoord ?? DEFAULT_CENTRE}     // Focus on selected or default
       zoom={mapZoom}                                // Zoom level
       infoPlace={infoPlace}                         // Current popup place

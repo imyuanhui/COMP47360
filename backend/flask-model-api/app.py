@@ -5,7 +5,7 @@ from linear import linear_predict
 from map_openweather_to_coco import map_openweather_to_coco
 from datetime import datetime
 from rf_predict import random_forest
-from xgb_predict import xgb_predict
+from xgboost_predict import xgb_predict
 from fetch_interest import fetch_interest, get_cached_interest
 
 app = Flask(__name__)
@@ -72,6 +72,7 @@ def predict_randomforest():
 
 
 #ADD
+#use xgboost_predict.py file
 @app.route("/predict/xgb", methods=["POST"])
 def predict_xgb():
     try:
@@ -82,20 +83,37 @@ def predict_xgb():
         weather = data["weather"]
         temp = weather.get("temp")
         prcp = weather.get("prcp")
+        flow_features = data.get("flow_features", {})
+        zone_tourist_count = flow_features.get("zone_tourist_count", 0)
+        tourist_ratio = flow_features.get("tourist_ratio", 0)
 
         print(f"[INFO] Received prediction request for zone_id={zone_id}, zone_name='{zone_name}'")
         interest = get_cached_interest(zone_name)
-        score = xgb_predict(timestamp, zone_id, temp, prcp, interest)
+        print(f"[INFO] Interest value: {interest}")
 
+        
+        result = xgb_predict(
+            timestamp=timestamp,
+            zone_id=zone_id,
+            temp=temp,
+            prcp=prcp,
+            interest=interest,
+            zone_tourist_count=zone_tourist_count,
+            tourist_ratio=tourist_ratio
+        )
+        print(f" Prediction result: {result}")
 
-        return jsonify({"busyness_score": round(score, 2)})
+        return jsonify(result)
+        
+        # Low : if flow < 1512
+        # Medium: if 1512 < flow < 5094
+        # High: if flow > 5094
 
     except Exception as e:
 
         print(f"[ERROR] XGB prediction failed: {e}")
-        return jsonify({"error": str(e)}), 400    
+        return jsonify({"error": str(e)}), 400
     
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

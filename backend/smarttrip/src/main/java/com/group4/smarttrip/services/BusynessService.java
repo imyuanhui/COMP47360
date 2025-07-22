@@ -46,9 +46,9 @@ public class BusynessService {
         System.out.println("Predicted busyness score: " + busynessScore);
 
         String busynessLevel = "undefined";
-        if (busynessScore <= 500) {
+        if (busynessScore <= 1512) {
             busynessLevel = "low";
-        } else if (busynessScore <= 1500) {
+        } else if (busynessScore <= 5094) {
             busynessLevel = "med";
         } else {
             busynessLevel = "high";
@@ -89,9 +89,9 @@ public class BusynessService {
         System.out.println("Predicted busyness score: " + busynessScore);
 
         String busynessLevel = "undefined";
-        if (busynessScore <= 500) {
+        if (busynessScore <= 1512) {
             busynessLevel = "low";
-        } else if (busynessScore <= 1500) {
+        } else if (busynessScore <= 5094) {
             busynessLevel = "med";
         } else {
             busynessLevel = "high";
@@ -144,7 +144,6 @@ public class BusynessService {
         // deploy
         //String url = "http://flask-ml:5000/predict/xgb";
         // local test
-        // String url = "http://127.0.0.1:5000/predict/xgb";
         String url = mlServiceUrl + "/predict/xgb";
 
 

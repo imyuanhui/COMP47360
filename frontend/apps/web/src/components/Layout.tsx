@@ -21,7 +21,7 @@
  *  consumes the remaining 50 % width.
  *************************************************************/
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 /* ----------------------------- props ----------------------------- */
@@ -55,7 +55,21 @@ export default function Layout({
     { label: 'Saved Places', path: tripId ? `/saved/${tripId}` : '/' },
   ];
  const heroImages = Array.from({ length: 20 }, (_, i) => `/assets/hero-images/NYC-${i + 1}.jpg`);
-const [imageUrl] = useState(() => heroImages[Math.floor(Math.random() * heroImages.length)]);
+const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+useEffect(() => {
+  if (!tripId) return; // tripId is required to persist per trip
+  const localKey = `trip-hero-${tripId}`;
+  const stored = localStorage.getItem(localKey);
+  if (stored) {
+    setImageUrl(stored);
+  } else {
+    const randomImg = heroImages[Math.floor(Math.random() * heroImages.length)];
+    localStorage.setItem(localKey, randomImg);
+    setImageUrl(randomImg);
+  }
+}, [tripId]);
+
 console.log("Layout component loaded!");
 
 
