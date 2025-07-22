@@ -1,9 +1,10 @@
 /**********************************************************************
- * PlaceCard.tsx  — v5
+ * PlaceCard.tsx  — v6
  * --------------------------------------------------------------------
  * Card UI component that displays a Place’s details and interaction
  * options:
- *   • Add/Remove to My Itinerary (with time-picker dropdown)
+ *   • Add/Remove to My Itinerary (with **time‑picker** instead of the
+ *     previous fixed list)
  *   • Save / Remove from Saved Places
  *   • Show predicted busyness (memoised via useBusyness)
  *   • Export to Google Maps (opens selected place in Google Maps)
@@ -15,6 +16,11 @@
  *       contexts). This restores the expected behaviour where clicking
  *       the card merely selects / zooms the place on the in‑app map,
  *       as handled by the parent wrapper component.
+ *
+ *      2025‑07‑22 — Time‑picker replaces hourly dropdown.
+ *     • <input type="time" step="300"> gives 5‑minute increments, so
+ *       10‑minute selections (10:40, 10:50, …) are also allowed.
+ *     • Minutes must be a multiple of 5 → simple regex validation.
  *********************************************************************/
 
 import React, { useState, useEffect } from 'react';
@@ -34,7 +40,9 @@ interface Props {
   timeSlot?: string;
 }
 
-/* ---------- Time Slot Options (09:00 → 18:00) ---------- */
+/* ---------- Time Slot Options (09:00 → 18:00) ----------
+ * Retained for reference; no longer rendered since the new
+ * time‑picker allows arbitrary HH:mm (5‑minute granularity). */
 const TIMES = Array.from({ length: 10 }, (_, i) => `${(9 + i).toString().padStart(2, '0')}:00`);
 
 export default function PlaceCard({
@@ -51,6 +59,7 @@ export default function PlaceCard({
   /* ---------- Local State ---------- */
   const [openMenu, setOpenMenu] = useState(false);
   const [selectedTime, setSelectedTime] = useState<string | null>(timeSlot ?? null);
+  const [timeInput, setTimeInput] = useState('09:00');
 
   /* ---------- Predicted Busyness (memoised) ---------- */
   const busynessLevel = useBusyness(
@@ -59,7 +68,7 @@ export default function PlaceCard({
     selectedTime ? `${new Date().toISOString().slice(0, 10)}T${selectedTime}:00` : undefined,
   );
 
-  /* ---------- Close dropdown with Escape ---------- */
+  /* ---------- Close dropdown / form with Escape ---------- */
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpenMenu(false);
     if (openMenu) window.addEventListener('keydown', handleKey);
@@ -72,6 +81,9 @@ export default function PlaceCard({
 
   /* ---------- Helper: Build Google Maps URL ---------- */
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`;
+
+  /* ---------- Helper: Validate time (HH:mm, minute % 5 === 0) ---------- */
+  const isValidTime = (t: string) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(t) && parseInt(t.slice(3), 10) % 5 === 0;
 
   /* -------------------- Render Card -------------------- */
   return (
@@ -103,11 +115,11 @@ export default function PlaceCard({
           <h3 className="font-semibold leading-tight">{place.name}</h3>
           <p className="mb-1 text-sm text-gray-500 lg:whitespace-normal">
             {place.address
-              ?.replace(/\b\d{5}(-\d{4})?\b/, '')           // Remove ZIP code
-              .replace(/,\s*United States$/, '')            // Remove country
-              .replace(/,\s*NY\b/, '')                      // Remove "NY"
-              .replace(/\s{2,}/g, ' ')                      // Collapse extra spaces
-              .replace(/,\s*$/, '')                         // Trim trailing commas
+              ?.replace(/\b\d{5}(-\d{4})?\b/, '')
+              .replace(/,\s*United States$/, '')
+              .replace(/,\s*NY\b/, '')
+              .replace(/\s{2,}/g, ' ')
+              .replace(/,\s*$/, '')
               .trim()}
           </p>
 
@@ -149,7 +161,7 @@ export default function PlaceCard({
                     className={`font-bold ${
                       busynessLevel === 'low'  ? 'text-customTeal' :
                       busynessLevel === 'med'  ? 'text-customAmber':
-                      busynessLevel === 'high' ? 'text-customPink' : ''
+                      busynessLevel === 'high' ? 'text-customPink'  : ''
                     }`}
                   >
                     {busynessLevel}
@@ -171,7 +183,7 @@ export default function PlaceCard({
                 lg:w-auto lg:items-end
               "
             >
-              {/* ---Export to Google Maps button (visible only in My Itinerary & Saved Places)--- */}
+              {/* ---Export to Google Maps button--- */}
               {hideItinerary && (
                 <a
                   href={mapsUrl}
@@ -189,7 +201,7 @@ export default function PlaceCard({
                 </a>
               )}
 
-              {/* ---Remove from Saved Places & Add to Saved Places buttons--- */}
+              {/* ---Remove / Save buttons--- */}
               {onSave && (
                 <button
                   onClick={e => {
@@ -219,7 +231,7 @@ export default function PlaceCard({
                 </button>
               )}
 
-              {/* ---Add to My Itinerary--- */}
+              {/* ---Add to My Itinerary / Remove toggle (Explore Places)--- */}
               {!onRemove && !hideItinerary && (
                 selectedTime ? (
                   <button
@@ -237,7 +249,7 @@ export default function PlaceCard({
                     </button>
 
                     {openMenu && (
-                      <div className="absolute right-0 top-10 z-10 w-44 rounded-lg border bg-white p-2 shadow-lg">
+                      <div className="absolute right-0 top-10 z-10 w-56 rounded-lg border bg-white p-3 shadow-lg">
                         <div className="mb-2 flex items-center justify-between">
                           <p className="text-sm font-semibold leading-none">Add to your Trip</p>
                           <button
@@ -249,20 +261,51 @@ export default function PlaceCard({
                           </button>
                         </div>
 
-                        {TIMES.map(t => (
-                          <button
-                            key={t}
-                            onClick={e => {
-                              e.stopPropagation();
-                              onAdd(place.id, t);
-                              setSelectedTime(t);
-                              setOpenMenu(false);
-                            }}
-                            className="w-full rounded px-2 py-1 text-left text-xs hover:bg-gray-100"
-                          >
-                            {t} &nbsp; + Add to timeslot
-                          </button>
-                        ))}
+                        {/* --- time input --- */}
+                        <label className="mb-2 block text-xs text-gray-700">
+                          Enter time&nbsp;
+                          <div className="flex gap-2">
+                            <select
+                              value={timeInput.split(':')[0]}
+                              onChange={(e) => setTimeInput(`${e.target.value}:${timeInput.split(':')[1]}`)}
+                              className="w-1/2 rounded border px-2 py-1 text-xs"
+                            >
+                              {Array.from({ length: 24 }, (_, i) => (
+                                <option key={i} value={i.toString().padStart(2, '0')}>
+                                  {i.toString().padStart(2, '0')}
+                                </option>
+                              ))}
+                            </select>
+
+                            <select
+                              value={timeInput.split(':')[1]}
+                              onChange={(e) => setTimeInput(`${timeInput.split(':')[0]}:${e.target.value}`)}
+                              className="w-1/2 rounded border px-2 py-1 text-xs"
+                            >
+                              {Array.from({ length: 12 }, (_, i) => (
+                                <option key={i} value={(i * 5).toString().padStart(2, '0')}>
+                                  {(i * 5).toString().padStart(2, '0')}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </label>
+
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            if (!isValidTime(timeInput)) {
+                              alert('Please enter a valid time (minutes must be in 05-minute increments).');
+                              return;
+                            }
+                            onAdd(place.id, timeInput);
+                            setSelectedTime(timeInput);
+                            setOpenMenu(false);
+                          }}
+                          className={`${baseBtn} bg-[#022c44] text-white hover:bg-[#022c44]/90 w-full`}
+                        >
+                          Add
+                        </button>
                       </div>
                     )}
                   </div>

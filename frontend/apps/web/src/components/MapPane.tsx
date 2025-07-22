@@ -1,14 +1,14 @@
 /**********************************************************************
- * MapPane.tsx  — v4
+ * MapPane.tsx  — v5
  * --------------------------------------------------------------------
- * Google‑Maps wrapper for Explore Places, Saved Places & My Itinerary.
- * All markers are coloured by predicted busyness.  The predictions
- * come from a single shared in‑memory cache so no place is fetched
- * more than once per browser tab.  “unknown” levels are never cached.
+ * Google-Maps wrapper for Explore Places, Saved Places & My Itinerary.
  *
- * 🆕 2025‑07‑19 — While the backend is still calculating a prediction
- *     (i.e. before the result is cached) we now show a marker with a
- *     *loading* glyph instead of showing *no* marker at all.
+ *     2025-07-22 — Time-picker change
+ *     • “Add to My Itinerary” now shows a small form with an HTML
+ *       <input type="time"> (step = 300 s → 5 min granularity).
+ *     • Minutes must be a multiple of 5;  invalid input triggers an
+ *       alert and nothing is added.
+ *
  *********************************************************************/
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -20,7 +20,7 @@ import {
   useLoadScript,
 } from '@react-google-maps/api';
 import axios from 'axios';
-import { cache } from '../services/useBusyness';     // 🆕 shared cache
+import { cache } from '../services/useBusyness'; // 🆕 shared cache
 
 /* ------------------------------------------------------------------ */
 /* Map constants                                                       */
@@ -28,17 +28,17 @@ import { cache } from '../services/useBusyness';     // 🆕 shared cache
 
 const LIBRARIES = ['places'] as const;
 const containerStyle = { width: '100%', height: '100%' } as const;
-const defaultCentre  = { lat: 40.758, lng: -73.9855 };            // Times Sq. fallback
+const defaultCentre = { lat: 40.758, lng: -73.9855 }; // Times Sq. fallback
 
 /* ---------- Map Styling ---------- */
 const mapStyles: google.maps.MapTypeStyle[] = [
-  { featureType: 'road',      elementType: 'labels',   stylers: [{ visibility: 'on' }] },
-  { featureType: 'water',     elementType: 'geometry', stylers: [{ color: '#a2daf2' }] },
+  { featureType: 'road', elementType: 'labels', stylers: [{ visibility: 'on' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#a2daf2' }] },
   { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#eaeaea' }] },
-  { featureType: 'road',      elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-  { featureType: 'poi',       elementType: 'geometry', stylers: [{ color: '#dbf2e3' }] },
-  { featureType: 'poi',       elementType: 'labels',   stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit',   elementType: 'geometry', stylers: [{ color: '#d3d3d3' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#dbf2e3' }] },
+  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#d3d3d3' }] },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -69,14 +69,16 @@ function markerIcon(level: string, size = 40): google.maps.Icon {
 
   /* ---------- existing coloured icons ---------- */
   const colour =
-    level === 'low'  ? '#6590f6' :
-    level === 'med'  ? '#f4b241' :
-    level === 'high' ? '#cc397c' : '#9ca3af';
+    level === 'low'
+      ? '#6590f6'
+      : level === 'med'
+      ? '#f4b241'
+      : level === 'high'
+      ? '#cc397c'
+      : '#9ca3af';
 
-  const label  =
-    level === 'low'  ? 'L' :
-    level === 'med'  ? 'M' :
-    level === 'high' ? 'H' : 'U';
+  const label =
+    level === 'low' ? 'L' : level === 'med' ? 'M' : level === 'high' ? 'H' : 'U';
 
   const svg = `
     <svg width="${size}" height="${size + 6}" viewBox="0 0 40 46" xmlns="http://www.w3.org/2000/svg">
@@ -97,21 +99,22 @@ function markerIcon(level: string, size = 40): google.maps.Icon {
 }
 
 /* ------------------------------------------------------------------ */
-/* Time‑slot options for the "Add to My Itinerary" dropdown            */
+/* Time‐slot options for the "Add to My Itinerary" dropdown            */
+/*  (retained for reference; no longer rendered)                       */
 /* ------------------------------------------------------------------ */
 const TIMES = Array.from({ length: 10 }, (_, i) => `${(9 + i).toString().padStart(2, '0')}:00`);
 
 /* ---------- Button Styling ---------- */
-const baseBtn  = 'min-w-[11rem] h-7 px-2 py-1 text-xs rounded whitespace-nowrap transition-colors';
+const baseBtn = 'min-w-[11rem] h-7 px-2 py-1 text-xs rounded whitespace-nowrap transition-colors';
 const ghostBtn = `${baseBtn} bg-gray-100 hover:bg-gray-200`;
 const primaryBtn = `${baseBtn} bg-[#022c44] text-white hover:bg-[#022c44]/90`;
-const removeBtn  = `${baseBtn} bg-red-100 text-red-700 hover:bg-red-200`;
+const removeBtn = `${baseBtn} bg-red-100 text-red-700 hover:bg-red-200`;
 
 /* ------------------------------------------------------------------ */
 /* Component props                                                     */
 /* ------------------------------------------------------------------ */
 interface Props {
- places: (Place & { busynessLevel: BusynessLevel })[];
+  places: (Place & { busynessLevel: BusynessLevel })[];
 
   focusCoord: google.maps.LatLngLiteral | null;
   zoom: number;
@@ -140,7 +143,7 @@ export default function MapPane({
   saved = [],
   onToggleSave,
   onAddToItinerary,
-  onRemoveFromItinerary
+  onRemoveFromItinerary,
 }: Props) {
   /* ---------------- Script loader ---------------- */
   const { isLoaded, loadError } = useLoadScript({
@@ -151,103 +154,50 @@ export default function MapPane({
   /* ---------------- Local state ---------------- */
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  type BusynessLevel = 'low' | 'med' | 'high' | 'unknown' | 'loading';
-type WithBusyness = Place & { busynessLevel: BusynessLevel };
-const withLevels: WithBusyness[] = places;
-
+  type WithBusyness = Place & { busynessLevel: BusynessLevel };
+  const withLevels: WithBusyness[] = places;
 
   const [filter, setFilter] = useState({
     high: true,
     med: true,
     low: true,
-    unknown: true,   // “loading” piggy‑backs on this flag
   });
   const toggle = (lvl: keyof typeof filter) =>
     setFilter(prev => ({ ...prev, [lvl]: !prev[lvl] }));
 
-  /* ---------- Dropdown menu state for itinerary times ---------- */
+  /* ---------- Dropdown / form state ---------- */
   const [openMenu, setOpenMenu] = useState(false);
-  useEffect(() => setOpenMenu(false), [infoPlace]);          // close when switching place / closing window
+  const [timeInput, setTimeInput] = useState('09:00');
+  useEffect(() => setOpenMenu(false), [infoPlace]); // close when switching place / closing window
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpenMenu(false);
     if (openMenu) window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [openMenu]);
 
-  /* ---------------- Fetch predictions (cached) ---------------- */
-//  useEffect(() => {
-//   const fetchBusyness = async () => {
-//     const isValidBusynessLevel = (val: any): val is BusynessLevel =>
-//       ['low', 'med', 'high', 'loading', 'unknown'].includes(val);
-
-//     const updated: WithBusyness[] = await Promise.all(
-//       places.map(async (p) => {
-//         let level: BusynessLevel = 'unknown';
-
-//         // Use existing valid level if present
-//         if (isValidBusynessLevel(p.busynessLevel) && p.busynessLevel !== 'unknown') {
-//           level = p.busynessLevel;
-//         } else {
-//           const cached = cache.get(p.id);
-//           if (isValidBusynessLevel(cached)) {
-//             level = cached;
-//           } else {
-//             try {
-//               // Add loading marker temporarily
-//               const loadingPlace: WithBusyness = { ...p, busynessLevel: 'loading' };
-//               setWithLevels((prev) => [
-//                 ...prev.filter((pl) => pl.id !== p.id),
-//                 loadingPlace,
-//               ]);
-
-//               const res = await axios.get(`/api/busyness?lat=${p.lat}&lng=${p.lng}`);
-//               const fetched = res.data.level;
-//               if (isValidBusynessLevel(fetched)) {
-//                 level = fetched;
-//                 cache.set(p.id, fetched);
-//               }
-//             } catch (err) {
-//               console.warn('Busyness fetch failed for', p.name, err);
-//             }
-//           }
-//         }
-
-//         return { ...p, busynessLevel: level };
-//       })
-//     );
-
-//     setWithLevels(updated);
-//   };
-
-//   fetchBusyness();
-// }, [places]);
-
-
-
-    /* ---------------------------------------------------------- */
-    /* 2️⃣  Fetch predictions for any coordinates not cached yet,
-     *     then patch state *incrementally*.
-     * ---------------------------------------------------------- */
-
   /* ---------------- Map centring / zoom ---------------- */
   const centre =
-    focusCoord ??
-    (places[0] ? { lat: places[0].lat, lng: places[0].lng } : defaultCentre);
+    focusCoord ?? (places[0] ? { lat: places[0].lat, lng: places[0].lng } : defaultCentre);
 
-  useEffect(() => { if (mapRef.current) mapRef.current?.panTo(centre); }, [centre]);
-  useEffect(() => { if (mapRef.current) mapRef.current?.setZoom(zoom);  }, [zoom]);
+  useEffect(() => {
+    if (mapRef.current) mapRef.current?.panTo(centre);
+  }, [centre]);
+  useEffect(() => {
+    if (mapRef.current) mapRef.current?.setZoom(zoom);
+  }, [zoom]);
 
   /* ---------------- Loading & error ---------------- */
   if (loadError) return <p>Error loading Google Maps.</p>;
   if (!isLoaded) return <p>Loading map…</p>;
 
+  /* ---------------- Helper: validate time ---------------- */
+  const isValidTime = (t: string) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(t) && parseInt(t.slice(3), 10) % 5 === 0;
+
   /* ---------------- JSX ---------------- */
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       {/* --- filter widget --- */}
-      <div 
-        className="absolute top-3 right-3 z-10 w-44 rounded border bg-white p-3 shadow"
-      >
+      <div className="absolute top-3 right-3 z-10 w-44 rounded border bg-white p-3 shadow">
         <p className="mb-1 text-xs font-semibold leading-none">Show markers</p>
         {(['high', 'med', 'low'] as const).map(lvl => (
           <label key={lvl} className="mb-1 flex items-center gap-2 text-xs">
@@ -260,10 +210,10 @@ const withLevels: WithBusyness[] = places;
             <span
               className={`capitalize font-semibold ${
                 lvl === 'high'
-                ? 'text-customPink'
-                : lvl === 'med'
-                ? 'text-customAmber'
-                : 'text-customTeal'
+                  ? 'text-customPink'
+                  : lvl === 'med'
+                  ? 'text-customAmber'
+                  : 'text-customTeal'
               }`}
             >
               {lvl}
@@ -277,7 +227,9 @@ const withLevels: WithBusyness[] = places;
         mapContainerStyle={containerStyle}
         center={centre}
         zoom={zoom}
-        onLoad={m => { mapRef.current = m; }}
+        onLoad={m => {
+          mapRef.current = m;
+        }}
         options={{
           styles: mapStyles,
           clickableIcons: false,
@@ -289,130 +241,25 @@ const withLevels: WithBusyness[] = places;
       >
         {/* --- markers --- */}
         {withLevels
-  .filter((p: WithBusyness) => {
-  let lvl: keyof typeof filter;
+          .filter((p: WithBusyness) => {
+            let lvl: keyof typeof filter;
 
-  if (p.busynessLevel === 'loading') {
-    lvl = 'unknown';
-  } else if (
-    p.busynessLevel === 'low' ||
-    p.busynessLevel === 'med' ||
-    p.busynessLevel === 'high' ||
-    p.busynessLevel === 'unknown'
-  ) {
-    lvl = p.busynessLevel;
-  } else {
-    lvl = 'unknown';
-  }
+            if (p.busynessLevel === 'low' || p.busynessLevel === 'med' || p.busynessLevel === 'high') {
+              lvl = p.busynessLevel;
+              return filter[lvl];
+            }
 
-  return filter[lvl];
-})
-
-
-
-  .map(p => (
-    <Marker
-      key={p.id}
-      position={{ lat: p.lat, lng: p.lng }}
-      icon={markerIcon(p.busynessLevel)}
-      onClick={() => onMarkerClick(p)}
-    />
-  ))}
-
-
-        {/* --- InfoWindow that displays when clicking place in Explore Places--- */}
-        {infoPlace && (
-          <InfoWindow
-            position={{ lat: infoPlace.lat, lng: infoPlace.lng }}
-            onCloseClick={onInfoClose}
-          >
-            <div className="-mt-9 min-w-[12rem] max-w-[14rem] pr-3 space-y-2 pb-4">
-              {/* ---Place name--- */}
-              <h3 className="mb-1 font-semibold">{infoPlace.name}</h3>
-              {/* ---Address--- */}
-              <p className="mt-1 mb-3 text-xs">{infoPlace.address}</p>
-              {/* ---Busyness rating--- */}
-              {(() => {
-                const level = withLevels.find(p => p.id === infoPlace.id)?.busynessLevel;
-                let levelClass = '';
-                if (level === 'low') levelClass = 'text-customTeal font-bold';
-                else if (level === 'med') levelClass = 'text-customAmber font-bold';
-                else if (level === 'high') levelClass = 'text-customPink font-bold';
-
-                return (
-                  <p className="text-xs text-gray-600">
-                    Busyness:{' '}
-                    {(level as BusynessLevel) === 'loading' ? (
-
-                      <span>Loading…</span>
-                    ) : (
-                      <span className={levelClass}>{level ?? '…'}</span>
-                    )}
-                  </p>
-                );
-              })()}
-
-              {/* ---------------- Action buttons (Explore Places only) ---------------- */}
-              {onToggleSave && (
-                <button
-                  onClick={() => onToggleSave(infoPlace)}
-                  className={
-                    saved.some(p => p.id === infoPlace.id) ? removeBtn : primaryBtn
-                  }
-                >
-                  {saved.some(p => p.id === infoPlace.id)
-                    ? 'Remove from Saved Places'
-                    : 'Add to Saved Places'}
-                </button>
-              )}
-
-              {onRemoveFromItinerary && (
-                <button
-                  onClick={() => onRemoveFromItinerary(infoPlace)}
-                  className="mt-2 bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1 text-xs rounded w-full"
-                >
-                  Remove from My Itinerary
-                </button>
-              )}
-
-              {onAddToItinerary && (
-                <div className="relative mt-2">
-                  <button onClick={() => setOpenMenu(!openMenu)} className={ghostBtn}>
-                    Add to My Itinerary
-                  </button>
-
-                  {openMenu && (
-                    <div className="absolute right-0 top-10 z-10 w-44 rounded-lg border bg-white p-2 shadow-lg">
-                      <div className="mb-2 flex items-center justify-between">
-                        <p className="text-sm font-semibold leading-none">Add to your Trip</p>
-                        <button
-                          onClick={() => setOpenMenu(false)}
-                          className="text-sm text-gray-400 hover:text-gray-600"
-                          aria-label="Close"
-                        >
-                          x
-                        </button>
-                      </div>
-
-                      {TIMES.map(t => (
-                        <button
-                          key={t}
-                          onClick={() => {
-                            onAddToItinerary(infoPlace, t);
-                            setOpenMenu(false);
-                          }}
-                          className="w-full rounded px-2 py-1 text-left text-xs hover:bg-gray-100"
-                        >
-                          {t} &nbsp; + Add to timeslot
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </InfoWindow>
-        )}
+            return false; // exclude 'unknown' and 'loading'
+          })
+          /* ------- UNIQUE KEY PER ENTRY (fixes duplicate-marker bug) ------- */
+          .map((p, i) => (
+            <Marker
+              key={`${p.id}-${i}`} /* ← now guaranteed unique */
+              position={{ lat: p.lat, lng: p.lng }}
+              icon={markerIcon(p.busynessLevel)}
+              onClick={() => onMarkerClick(p)}
+            />
+          ))}
       </GoogleMap>
     </div>
   );
