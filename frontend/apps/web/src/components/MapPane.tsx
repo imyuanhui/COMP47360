@@ -161,6 +161,7 @@ export default function MapPane({
     high: true,
     med: true,
     low: true,
+    unknown: true, // “loading” piggy-backs on this flag
   });
   const toggle = (lvl: keyof typeof filter) =>
     setFilter(prev => ({ ...prev, [lvl]: !prev[lvl] }));
@@ -192,6 +193,9 @@ export default function MapPane({
 
   /* ---------------- Helper: validate time ---------------- */
   const isValidTime = (t: string) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(t) && parseInt(t.slice(3), 10) % 5 === 0;
+  /* ---------- Helper: Build Google Maps deep-link ---------- */
+  const mapsUrlFor = (lat: number, lng: number) =>
+  `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
 
   /* ---------------- JSX ---------------- */
   return (
@@ -222,14 +226,12 @@ export default function MapPane({
         ))}
       </div>
 
-      {/* --- map --- */}
-      <GoogleMap
+{/* --- map --- */}
+<GoogleMap
         mapContainerStyle={containerStyle}
         center={centre}
         zoom={zoom}
-        onLoad={m => {
-          mapRef.current = m;
-        }}
+        onLoad={m => { mapRef.current = m; }}
         options={{
           styles: mapStyles,
           clickableIcons: false,
@@ -241,25 +243,167 @@ export default function MapPane({
       >
         {/* --- markers --- */}
         {withLevels
-          .filter((p: WithBusyness) => {
-            let lvl: keyof typeof filter;
+  .filter((p: WithBusyness) => {
+  let lvl: keyof typeof filter;
 
-            if (p.busynessLevel === 'low' || p.busynessLevel === 'med' || p.busynessLevel === 'high') {
-              lvl = p.busynessLevel;
-              return filter[lvl];
-            }
+  if (p.busynessLevel === 'loading') {
+    lvl = 'unknown';
+  } else if (
+    p.busynessLevel === 'low' ||
+    p.busynessLevel === 'med' ||
+    p.busynessLevel === 'high' ||
+    p.busynessLevel === 'unknown'
+  ) {
+    lvl = p.busynessLevel;
+  } else {
+    lvl = 'unknown';
+  }
 
-            return false; // exclude 'unknown' and 'loading'
-          })
-          /* ------- UNIQUE KEY PER ENTRY (fixes duplicate-marker bug) ------- */
-          .map((p, i) => (
-            <Marker
-              key={`${p.id}-${i}`} /* ← now guaranteed unique */
-              position={{ lat: p.lat, lng: p.lng }}
-              icon={markerIcon(p.busynessLevel)}
-              onClick={() => onMarkerClick(p)}
-            />
-          ))}
+  return filter[lvl];
+})
+
+
+
+  .map(p => (
+    <Marker
+      key={p.id}
+      position={{ lat: p.lat, lng: p.lng }}
+      icon={markerIcon(p.busynessLevel)}
+      onClick={() => onMarkerClick(p)}
+    />
+  ))}
+
+
+        {/* --- InfoWindow that displays when clicking place in Explore Places--- */}
+        {infoPlace && (
+          <InfoWindow
+            position={{ lat: infoPlace.lat, lng: infoPlace.lng }}
+            onCloseClick={onInfoClose}
+          >
+            <div className="-mt-9 min-w-[12rem] max-w-[14rem] pr-3 space-y-2 pb-4">
+              {/* ---Place name--- */}
+              <h3 className="mb-1 font-semibold">{infoPlace.name}</h3>
+              {/* ---Address--- */}
+              <p className="mt-1 mb-3 text-xs">{infoPlace.address}</p>
+              {/* ---Busyness rating--- */}
+              {(() => {
+                const level = withLevels.find(p => p.id === infoPlace.id)?.busynessLevel;
+                let levelClass = '';
+                if (level === 'low') levelClass = 'text-customTeal font-bold';
+                else if (level === 'med') levelClass = 'text-customAmber font-bold';
+                else if (level === 'high') levelClass = 'text-customPink font-bold';
+
+                return (
+                  <p className="text-xs text-gray-600">
+                    Busyness:{' '}
+                    {(level as BusynessLevel) === 'loading' ? (
+
+                      <span>Loading…</span>
+                    ) : (
+                      <span className={levelClass}>{level ?? '…'}</span>
+                    )}
+                  </p>
+                );
+              })()}
+
+              {/* ---------------- Action buttons (Explore Places only) ---------------- */}
+              {onToggleSave && (
+                <button
+                  onClick={() => onToggleSave(infoPlace)}
+                  className={
+                    saved.some(p => p.id === infoPlace.id) ? removeBtn : primaryBtn
+                  }
+                >
+                  {saved.some(p => p.id === infoPlace.id)
+                    ? 'Remove from Saved Places'
+                    : 'Add to Saved Places'}
+                </button>
+              )}
+
+              {onRemoveFromItinerary && (
+                <button
+                  onClick={() => onRemoveFromItinerary(infoPlace)}
+                  className="mt-2 bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1 text-xs rounded w-full"
+                >
+                  Remove from My Itinerary
+                </button>
+              )}
+
+              {onAddToItinerary && (
+                <div className="relative mt-2">
+                  <button onClick={() => setOpenMenu(!openMenu)} className={ghostBtn}>
+                    Add to My Itinerary
+                  </button>
+
+                  {openMenu && (
+                    <div className="absolute right-0 top-10 z-10 w-56 rounded-lg border bg-white p-3 shadow-lg">
+                    {/* header */}
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-sm font-semibold leading-none">Add to your Trip</p>
+                      <button
+                        onClick={() => setOpenMenu(false)}
+                        className="text-sm text-gray-400 hover:text-gray-600"
+                        aria-label="Close"
+                      >
+                        x
+                      </button>
+                    </div>
+                  
+                    {/* hour / minute selects (5-min granularity) */}
+                    <label className="mb-2 block text-xs text-gray-700">
+                      Enter time&nbsp;
+                      <div className="flex gap-2">
+                        <select
+                          value={timeInput.split(':')[0]}
+                          onChange={e =>
+                            setTimeInput(`${e.target.value}:${timeInput.split(':')[1]}`)}
+                          className="w-1/2 rounded border px-2 py-1 text-xs"
+                        >
+                          {Array.from({ length: 24 }, (_, i) => (
+                            <option key={i} value={i.toString().padStart(2, '0')}>
+                              {i.toString().padStart(2, '0')}
+                            </option>
+                          ))}
+                        </select>
+                  
+                        <select
+                          value={timeInput.split(':')[1]}
+                          onChange={e =>
+                            setTimeInput(`${timeInput.split(':')[0]}:${e.target.value}`)}
+                          className="w-1/2 rounded border px-2 py-1 text-xs"
+                        >
+                          {Array.from({ length: 12 }, (_, i) => (
+                            <option key={i} value={(i * 5).toString().padStart(2, '0')}>
+                              {(i * 5).toString().padStart(2, '0')}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </label>
+                  
+                    {/* add button */}
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (!isValidTime(timeInput)) {
+                          alert('Please enter a valid time (minutes must be in 05-minute increments).');
+                          return;
+                        }
+                        onAddToItinerary?.(infoPlace, timeInput);   // ← same signature
+                        setOpenMenu(false);
+                      }}
+                      className={`${baseBtn} bg-[#022c44] text-white hover:bg-[#022c44]/90 w-full`}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  
+                  )}
+                </div>
+              )}
+            </div>
+          </InfoWindow>
+        )}
       </GoogleMap>
     </div>
   );
