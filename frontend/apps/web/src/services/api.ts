@@ -288,11 +288,16 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    const isJwtExpired =
-      error.response?.status === 500 &&
-      error.response?.data?.message?.includes("JWT expired");
+    // const isJwtExpired =
+    //   error.response?.status === 500 &&
+    //   error.response?.data?.message?.includes("JWT expired");
 
-    if (isJwtExpired && !originalRequest._retry) {
+    const isAccessTokenExpired =
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes("/token/refresh");
+
+    if (isAccessTokenExpired) {
       originalRequest._retry = true;
 
       try {
