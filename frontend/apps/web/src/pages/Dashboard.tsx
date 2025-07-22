@@ -395,11 +395,7 @@ export default function Dashboard() {
         <div className="fixed bottom-20 right-6 w-80 bg-white shadow-2xl rounded-lg z-50 flex flex-col max-h-[70vh] overflow-hidden border">
           <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-3 shadow-md drop-shadow-md flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <img
-                src="/assets/bot.png"
-                alt="Bot"
-                className="h-6 w-6 rounded-full"
-              />
+  
               <span className="font-semibold">SmartBot Assistant</span>
             </div>
 
