@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.LocalDateTime;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -25,6 +27,20 @@ public class BusynessServiceTest {
         assertNotNull(zoneBusynessDto2);
         assertNotEquals(zoneBusynessDto1.getBusynessScore(), zoneBusynessDto2.getBusynessScore());
         assertNotEquals(zoneBusynessDto1.getZoneId(), zoneBusynessDto2.getZoneId());
+    }
+
+    @Test
+    void testGetBusynessByTimeAndZone() {
+        Long[] ids = {1L, 6L, 9L};
+        LocalDateTime weekday = LocalDateTime.of(2025, 7, 22, 10, 0);
+        LocalDateTime weekend = LocalDateTime.of(2025, 7, 20, 10, 0);
+        for (long id : ids) {
+            ZoneBusynessDto dto_weekday = busynessService.getFutureBusynessByZone(id, weekday);
+            ZoneBusynessDto dto_weekend = busynessService.getFutureBusynessByZone(id, weekend);
+            ZoneBusynessDto dto_current = busynessService.getCurrentBusynessByZone(id);
+            System.out.println("===result===\n" + dto_weekday + "\n" + dto_weekend + "\n" + dto_current);
+
+        }
     }
 
 }
