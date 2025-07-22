@@ -5,7 +5,7 @@ import pandas as pd
 from datetime import datetime
 
 # ----------- Load model and features -----------
-MODEL = joblib.load("xgboost_model_0719_exp.pkl")
+MODEL = joblib.load("xgboost_model_0721_exp.pkl")
 with open("features_r.json") as f:
     FEATURES_R = json.load(f)
 
