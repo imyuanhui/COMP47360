@@ -4,11 +4,14 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from flask import Flask, request, jsonify
+from pandas.api.types import CategoricalDtype
 
+print("[XGB] Start prediction")
 # ----------- Load model and features -----------
-xgb_model = joblib.load("xgboost_model_0720_exp.pkl")
-gmm_model = joblib.load("gmm_model.pkl") #model for cluster L,M,H
-scaler = joblib.load("scaler.pkl")
+_loaded = joblib.load("xgboost_model_0721_exp.pkl")
+xgb_model = _loaded['model']
+FEATURES_R = _loaded['features_r']
+
 
 with open("features_r.json") as f:
     FEATURES_R = json.load(f)
@@ -22,12 +25,6 @@ with open("global_defaults.json", encoding="utf-8") as f:
 with open("zone_bias_dict.json") as f:    #adjust predict bias for flow
     zone_bias_dict = json.load(f)
 
-# GMM map according to gmm_level_mapping.json file
-level_map = {
-    1: "Low",
-    0: "Medium",
-    2: "High"
-}
 
 # ----------- Payload builder -----------
 def _build_payload(req: dict) -> dict:
@@ -40,11 +37,13 @@ def _build_payload(req: dict) -> dict:
 
 # ----------- One-hot align -----------
 
+
+#ADD
+
 def _onehot_align(df_raw: pd.DataFrame) -> pd.DataFrame:
     category_cols = ['zone_id', 'hour', 'weekday', 'month', 'coco_group', 'category_top']
     available_cols = [col for col in category_cols if col in df_raw.columns]
 
-    #ADD
     for col in ['zone_tourist_count', 'tourist_ratio']:
         if col in df_raw.columns:
             df_raw[col] = pd.to_numeric(df_raw[col], errors='coerce').fillna(0)
@@ -52,17 +51,33 @@ def _onehot_align(df_raw: pd.DataFrame) -> pd.DataFrame:
     for col in available_cols:
         df_raw[col] = df_raw[col].astype(str)
 
+    zone_type = CategoricalDtype([str(i) for i in range(32)], ordered=False)
+    hour_type = CategoricalDtype([str(i) for i in range(9, 19)], ordered=False)
+
+    if 'zone_id' in df_raw.columns:
+        df_raw['zone_id'] = df_raw['zone_id'].astype(zone_type)
+    if 'hour' in df_raw.columns:
+        df_raw['hour'] = df_raw['hour'].astype(hour_type)
+
     dummies = pd.get_dummies(df_raw, columns=available_cols, prefix_sep="_")
 
     missing_cols = [col for col in FEATURES_R if col not in dummies.columns]
     for col in missing_cols:
         dummies[col] = 0
 
+    dummies = dummies[[col for col in dummies.columns if col in FEATURES_R]]
+
     return dummies[FEATURES_R]
+
+
+
 
 # ----------- XGBoost prediction function -----------
 #ADD
+
 def xgb_predict(timestamp, zone_id, temp, prcp, interest, zone_tourist_count=None, tourist_ratio=None):
+    print("[XGB] Start prediction")
+
     try:
         dt = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
     except Exception as e:
@@ -82,28 +97,30 @@ def xgb_predict(timestamp, zone_id, temp, prcp, interest, zone_tourist_count=Non
         "tourist_ratio": tourist_ratio
     }
 
+    # print("[XGB] Raw input req:", req)
+
     df = pd.DataFrame([_build_payload(req)])
+    # print("[XGB] Payload after _build_payload:", df.to_dict())
+
     X = _onehot_align(df)
+    # print("[XGB] One-hot encoded shape:", X.shape)
+    # print("[XGB] Final X input:\n", X.to_dict(orient="records")[0])
 
-    # 預測 flow (log scale)，並進行 log 反轉
+
+    # print("[XGB] Calling xgb_model.predict")
     y_pred_log = xgb_model.predict(X)[0]
-    score = float(np.expm1(y_pred_log))
+    # print("[XGB] Raw prediction (log):", y_pred_log)
 
-    # Bias 修正
+    score = float(np.expm1(y_pred_log))
+    # print("[XGB] Expm1 score:", score)
+
     zone_id_str = str(zone_id)
     bias_correction = zone_bias_dict.get(zone_id_str, 0)
+    # print(f"[XGB] Bias correction for zone {zone_id_str}: {bias_correction}")
     score += bias_correction
 
-    # GMM 分群（std 設 0）
-    hour_sin = np.sin(2 * np.pi * dt.hour / 24)
-    hour_cos = np.cos(2 * np.pi * dt.hour / 24)
-    gmm_input = np.array([[score, 0, hour_sin, hour_cos]])
-    gmm_input_scaled = scaler.transform(gmm_input)
-    gmm_cluster = gmm_model.predict(gmm_input_scaled)[0]
-    level = level_map[gmm_cluster]
 
     return {
         "busyness_score": round(score, 2),
-        "busyness_level": level
     }
 
