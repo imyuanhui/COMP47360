@@ -45,12 +45,23 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const allVideoIds = [
-    "7438833662516383006",
-    "7452843363255979286",
-    "7283792903828802859",
-    "7386346933046021406",
-    "7366414147325791534",
-    "7523011556087483678",
+    "7392169790883892513",
+    "7381781112911170848",
+    "7473907576221093150",
+    "7358540570182044960",
+    "7441263352803757344",
+    "7417465168122137887",
+    "7506799770728451346",
+    "7366690620599192878",
+    "7516244392022199583",
+    "7336926272381029678",
+    "7243175086918864154",
+    "7477632415591124246",
+    "7096951806219078918",
+    "7502654119564430622",
+    "7448265718803549483",
+    "7212997965164612870",
+    "7509157809582279967",
   ];
   const chatbotQA = [
     {
@@ -877,7 +888,7 @@ export default function Dashboard() {
               <div className="overflow-hidden aspect-[9/16]">
                 <iframe
                   src={`https://www.tiktok.com/embed/v2/${id}`} // ← /v2 is fluid-width
-                  allow="autoplay; encrypted-media"
+                  allow="encrypted-media"
                   allowFullScreen
                   title={`TikTok Video ${index + 1}`}
                   className="w-full h-full border-0"

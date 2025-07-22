@@ -243,7 +243,7 @@ async function enrichWithBusyness(
     }
     inactivityTimer.current = setTimeout(() => {
       setHeroCollapsed(false);
-    }, 10000);
+    }, 20000);
   };
 
   /* =========================================================================
