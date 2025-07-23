@@ -10,6 +10,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserPreferences {
+    private String tripName;
     private String zoneName;
     private int startingTime;
     private int duration;
