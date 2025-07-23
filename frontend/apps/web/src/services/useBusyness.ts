@@ -15,7 +15,7 @@ function key(lat: number, lon: number, ts?: string) {
 
 /**
  * One-shot helper – fetches *current* busyness for a coordinate.
- * Returns one of "low" | "med" | "high" | "unknown" (never throws).
+ * Returns one of "low" | "med" | "high" (never throws).
  *
  *  • Uses the same /api/busyness endpoint as the React hook below.
  *  • Shares the cache, so callers pay the network cost at most once.
@@ -27,12 +27,12 @@ export async function fetchBusynessLevel(lat: number, lon: number): Promise<stri
   try {
     const { data } = await axios.get(`/api/busyness?lat=${lat}&lon=${lon}`);
     const value = Array.isArray(data) ? data[0]?.busynessLevel : data.busynessLevel;
-    const val   = value ?? 'unknown';
+    const raw   = value ?? 'unknown';
 
-    if (val !== 'unknown') cache.set(k, val);   // ② populate cache
-    return val;
+    if (raw !== 'unknown') cache.set(k, raw);   // ② populate cache only when API returned real data
+    return raw === 'unknown' ? 'low' : raw;
   } catch {
-    return 'unknown';
+    return 'low';
   }
 }
 
@@ -52,13 +52,13 @@ export function useBusyness(
 
     const k = key(lat, lon, timestamp);
 
-    // 1️⃣  Use cached value if we have it
+    // Use cached value if we have it
     if (cache.has(k)) {
       setLevel(cache.get(k)!);
       return;
     }
 
-    // 2️⃣  Otherwise fetch & cache (unless it's "unknown")
+    // Otherwise fetch & cache (unless it's "unknown")
     let cancelled = false;
 
     (async () => {
@@ -68,17 +68,19 @@ export function useBusyness(
 
         const { data } = await axios.get(url);
         const value = Array.isArray(data) ? data[0]?.busynessLevel : data.busynessLevel;
-        const val   = value ?? 'unknown';
+        const raw   = value ?? 'unknown';
 
-        if (!cancelled) setLevel(val);
-        if (val !== 'unknown') cache.set(k, val);   // 👉 only cache real answers
+        const final = raw === 'unknown' ? 'low' : raw;
+
+        if (!cancelled) setLevel(final);
+        if (raw !== 'unknown') cache.set(k, raw);   // 👉 only cache real answers
       } catch {
-        if (!cancelled) setLevel('unknown');
+        if (!cancelled) setLevel('low');
       }
     })();
 
     return () => { cancelled = true; };
   }, [lat, lon, timestamp]);
 
-  return level;     // "low" | "med" | "high" | "unknown" | null (loading)
+  return level;     // "low" | "med" | "high" | null (loading)
 }
