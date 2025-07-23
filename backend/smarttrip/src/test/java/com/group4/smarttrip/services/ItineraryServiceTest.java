@@ -19,7 +19,7 @@ public class ItineraryServiceTest {
 
     @Test
     void testGenerateItinerary() {
-        UserPreferences userPreferences = new UserPreferences("Times Square", 9, 9, Arrays.asList("cafe", "toys", "attraction"));
+        UserPreferences userPreferences = new UserPreferences("SmartTrip", "Times Square", 9, 9, Arrays.asList("cafe", "toys", "attraction"));
 
         List<Place> itinerary = itineraryService.generateItinerary(userPreferences);
 
