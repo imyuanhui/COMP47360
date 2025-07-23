@@ -307,7 +307,7 @@ async function enrichWithBusyness(
             <div key={i} className="h-24 rounded-lg bg-gray-100 animate-pulse" />
           ))
         ) : combined.length === 0 ? (
-          <p className="mt-4 text-center text-gray-500">No places found.</p>
+          <p className="mt-4 text-center text-gray-500">Loading Places...</p>
         ) : (
           combined.map(p => {
             const isSaved = saved.some(sp => sp.id === p.id);
