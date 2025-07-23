@@ -48,13 +48,7 @@ public class SmartItineraryService {
         LocalDateTime endDateTime = startDateTime.plusHours(duration);
 
         CreateTripRequest tripRequest = new CreateTripRequest();
-        String zone = preferences.getZoneName() != null ? preferences.getZoneName() : "NYC";
-        String[] adjectives = {"Chill", "Fun", "Classic", "Cozy", "Quick", "Epic", "Magical", "Urban", "Vibrant", "Scenic", "Bold", "Peaceful", "Lively", "Hidden", "Sunny"};
-        String[] nouns = {"Adventure", "Escape", "Journey", "Loop", "Explorer", "Ride", "Quest", "Trail", "Expedition", "Safari", "Walk", "Voyage", "Hop", "Odyssey", "Sprint"};
-        String randomName = adjectives[new Random().nextInt(adjectives.length)] + " " +
-                nouns[new Random().nextInt(nouns.length)];
-        String tripName = randomName + " in " + zone;
-        tripRequest.setTripName(tripName);
+        tripRequest.setTripName(preferences.getTripName());
         tripRequest.setStartDateTime(startDateTime);
         tripRequest.setEndDateTime(endDateTime);
         tripRequest.setNumTravellers(1);

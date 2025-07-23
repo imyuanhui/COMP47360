@@ -57,6 +57,7 @@ public class GeminiService {
         return "You are a travel assistant for SmartTrip NYC. " +
                 "A user describes their ideal day in Manhattan. Your task is to extract key planning details from the input and return them as a JSON object in the following format:\n\n" +
                 "{\n" +
+                "  \"tripName\": <the most suitable name for the itinerary, suits the vibe or preferred activities>,\n" +
                 "  \"zoneName\": <one of the allowed zones below, or null if not mentioned>,\n" +
                 "  \"startingTime\": <hour in 24h format, default 9 if unspecified>,\n" +
                 "  \"duration\": <number of hours, default 9 if unspecified>,\n" +
