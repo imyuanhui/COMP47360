@@ -1,14 +1,14 @@
 /**********************************************************************
- * MapPane.tsx  — v5
+ * MapPane.tsx  — v6
  * --------------------------------------------------------------------
- * Google-Maps wrapper for Explore Places, Saved Places & My Itinerary.
+ * Google‑Maps wrapper for Explore Places, Saved Places & My Itinerary.
  *
- *     2025-07-22 — Time-picker change
- *     • “Add to My Itinerary” now shows a small form with an HTML
- *       <input type="time"> (step = 300 s → 5 min granularity).
- *     • Minutes must be a multiple of 5;  invalid input triggers an
- *       alert and nothing is added.
+ *     2025‑07‑23 — Hide unknown markers
+ *     • Markers where busynessLevel === 'unknown' are no longer rendered.
+ *     • “Loading” markers are still shown so users get immediate feedback
+ *       while real busyness data is fetched.
  *
+ *     2025‑07‑22 — Time‑picker change (see v5 changelog for details)
  *********************************************************************/
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -47,8 +47,8 @@ const mapStyles: google.maps.MapTypeStyle[] = [
 function markerIcon(level: string, size = 40): google.maps.Icon {
   /* -------------------------------------------------------------- */
   /* 🆕  Loading marker (grey outline, animated dots would be nice
-   *     but SVG SMIL is disabled in Chrome; we go for “…” instead)
-   * -------------------------------------------------------------- */
+   *     but SVG SMIL is disabled in Chrome; we go for “…” instead)  */
+  /* -------------------------------------------------------------- */
   if (level === 'loading') {
     const svg = `
     <svg width="${size}" height="${size + 6}" viewBox="0 0 40 46" xmlns="http://www.w3.org/2000/svg">
@@ -99,7 +99,7 @@ function markerIcon(level: string, size = 40): google.maps.Icon {
 }
 
 /* ------------------------------------------------------------------ */
-/* Time‐slot options for the "Add to My Itinerary" dropdown            */
+/* Time‑slot options for the "Add to My Itinerary" dropdown            */
 /*  (retained for reference; no longer rendered)                       */
 /* ------------------------------------------------------------------ */
 const TIMES = Array.from({ length: 10 }, (_, i) => `${(9 + i).toString().padStart(2, '0')}:00`);
@@ -161,7 +161,7 @@ export default function MapPane({
     high: true,
     med: true,
     low: true,
-    unknown: true, // “loading” piggy-backs on this flag
+    unknown: false, // ⬅️ hide unknown markers by default (loading markers handled separately)
   });
   const toggle = (lvl: keyof typeof filter) =>
     setFilter(prev => ({ ...prev, [lvl]: !prev[lvl] }));
@@ -192,10 +192,8 @@ export default function MapPane({
   if (!isLoaded) return <p>Loading map…</p>;
 
   /* ---------------- Helper: validate time ---------------- */
-  const isValidTime = (t: string) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(t) && parseInt(t.slice(3), 10) % 5 === 0;
-  /* ---------- Helper: Build Google Maps deep-link ---------- */
-  const mapsUrlFor = (lat: number, lng: number) =>
-  `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  const isValidTime = (t: string) =>
+    /^([01]\d|2[0-3]):([0-5]\d)$/.test(t) && parseInt(t.slice(3), 10) % 5 === 0;
 
   /* ---------------- JSX ---------------- */
   return (
@@ -226,12 +224,14 @@ export default function MapPane({
         ))}
       </div>
 
-{/* --- map --- */}
-<GoogleMap
+      {/* --- map --- */}
+      <GoogleMap
         mapContainerStyle={containerStyle}
         center={centre}
         zoom={zoom}
-        onLoad={m => { mapRef.current = m; }}
+        onLoad={m => {
+          mapRef.current = m;
+        }}
         options={{
           styles: mapStyles,
           clickableIcons: false,
@@ -243,36 +243,24 @@ export default function MapPane({
       >
         {/* --- markers --- */}
         {withLevels
-  .filter((p: WithBusyness) => {
-  let lvl: keyof typeof filter;
+          .filter((p: WithBusyness) => {
+            // 1️⃣ hide unknown markers completely
+            if (p.busynessLevel === 'unknown') return false;
 
-  if (p.busynessLevel === 'loading') {
-    lvl = 'unknown';
-  } else if (
-    p.busynessLevel === 'low' ||
-    p.busynessLevel === 'med' ||
-    p.busynessLevel === 'high' ||
-    p.busynessLevel === 'unknown'
-  ) {
-    lvl = p.busynessLevel;
-  } else {
-    lvl = 'unknown';
-  }
+            // 2️⃣ always show loading markers so the user knows data is on its way
+            if (p.busynessLevel === 'loading') return true;
 
-  return filter[lvl];
-})
-
-
-
-  .map(p => (
-    <Marker
-      key={p.id}
-      position={{ lat: p.lat, lng: p.lng }}
-      icon={markerIcon(p.busynessLevel)}
-      onClick={() => onMarkerClick(p)}
-    />
-  ))}
-
+            // 3️⃣ apply user filter for known levels
+            return filter[p.busynessLevel as keyof typeof filter];
+          })
+          .map(p => (
+            <Marker
+              key={p.id}
+              position={{ lat: p.lat, lng: p.lng }}
+              icon={markerIcon(p.busynessLevel)}
+              onClick={() => onMarkerClick(p)}
+            />
+          ))}
 
         {/* --- InfoWindow that displays when clicking place in Explore Places--- */}
         {infoPlace && (
@@ -297,7 +285,6 @@ export default function MapPane({
                   <p className="text-xs text-gray-600">
                     Busyness:{' '}
                     {(level as BusynessLevel) === 'loading' ? (
-
                       <span>Loading…</span>
                     ) : (
                       <span className={levelClass}>{level ?? '…'}</span>
@@ -337,67 +324,70 @@ export default function MapPane({
 
                   {openMenu && (
                     <div className="absolute right-0 top-10 z-10 w-56 rounded-lg border bg-white p-3 shadow-lg">
-                    {/* header */}
-                    <div className="mb-2 flex items-center justify-between">
-                      <p className="text-sm font-semibold leading-none">Add to your Trip</p>
+                      {/* header */}
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-sm font-semibold leading-none">Add to your Trip</p>
+                        <button
+                          onClick={() => setOpenMenu(false)}
+                          className="text-sm text-gray-400 hover:text-gray-600"
+                          aria-label="Close"
+                        >
+                          x
+                        </button>
+                      </div>
+
+                      {/* hour / minute selects (5-min granularity) */}
+                      <label className="mb-2 block text-xs text-gray-700">
+                        Enter time&nbsp;
+                        <div className="flex gap-2">
+                          <select
+                            value={timeInput.split(':')[0]}
+                            onChange={e =>
+                              setTimeInput(`${e.target.value}:${timeInput.split(':')[1]}`)
+                            }
+                            className="w-1/2 rounded border px-2 py-1 text-xs"
+                          >
+                            {Array.from({ length: 24 }, (_, i) => (
+                              <option key={i} value={i.toString().padStart(2, '0')}>
+                                {i.toString().padStart(2, '0')}
+                              </option>
+                            ))}
+                          </select>
+
+                          <select
+                            value={timeInput.split(':')[1]}
+                            onChange={e =>
+                              setTimeInput(`${timeInput.split(':')[0]}:${e.target.value}`)
+                            }
+                            className="w-1/2 rounded border px-2 py-1 text-xs"
+                          >
+                            {Array.from({ length: 12 }, (_, i) => (
+                              <option key={i} value={(i * 5).toString().padStart(2, '0')}>
+                                {(i * 5).toString().padStart(2, '0')}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </label>
+
+                      {/* add button */}
                       <button
-                        onClick={() => setOpenMenu(false)}
-                        className="text-sm text-gray-400 hover:text-gray-600"
-                        aria-label="Close"
+                        onClick={e => {
+                          e.stopPropagation();
+                          if (!isValidTime(timeInput)) {
+                            alert(
+                              'Please enter a valid time (minutes must be in 05-minute increments).'
+                            );
+                            return;
+                          }
+                          onAddToItinerary?.(infoPlace, timeInput); // ← same signature
+                          setOpenMenu(false);
+                        }}
+                        className={`${baseBtn} bg-[#022c44] text-white hover:bg-[#022c44]/90 w-full`}
                       >
-                        x
+                        Add
                       </button>
                     </div>
-                  
-                    {/* hour / minute selects (5-min granularity) */}
-                    <label className="mb-2 block text-xs text-gray-700">
-                      Enter time&nbsp;
-                      <div className="flex gap-2">
-                        <select
-                          value={timeInput.split(':')[0]}
-                          onChange={e =>
-                            setTimeInput(`${e.target.value}:${timeInput.split(':')[1]}`)}
-                          className="w-1/2 rounded border px-2 py-1 text-xs"
-                        >
-                          {Array.from({ length: 24 }, (_, i) => (
-                            <option key={i} value={i.toString().padStart(2, '0')}>
-                              {i.toString().padStart(2, '0')}
-                            </option>
-                          ))}
-                        </select>
-                  
-                        <select
-                          value={timeInput.split(':')[1]}
-                          onChange={e =>
-                            setTimeInput(`${timeInput.split(':')[0]}:${e.target.value}`)}
-                          className="w-1/2 rounded border px-2 py-1 text-xs"
-                        >
-                          {Array.from({ length: 12 }, (_, i) => (
-                            <option key={i} value={(i * 5).toString().padStart(2, '0')}>
-                              {(i * 5).toString().padStart(2, '0')}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </label>
-                  
-                    {/* add button */}
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        if (!isValidTime(timeInput)) {
-                          alert('Please enter a valid time (minutes must be in 05-minute increments).');
-                          return;
-                        }
-                        onAddToItinerary?.(infoPlace, timeInput);   // ← same signature
-                        setOpenMenu(false);
-                      }}
-                      className={`${baseBtn} bg-[#022c44] text-white hover:bg-[#022c44]/90 w-full`}
-                    >
-                      Add
-                    </button>
-                  </div>
-                  
                   )}
                 </div>
               )}

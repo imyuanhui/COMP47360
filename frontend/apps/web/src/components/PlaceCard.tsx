@@ -1,5 +1,5 @@
 /**********************************************************************
- * PlaceCard.tsx  — v6
+ * PlaceCard.tsx  — v8
  * --------------------------------------------------------------------
  * Card UI component that displays a Place’s details and interaction
  * options:
@@ -21,6 +21,12 @@
  *     • <input type="time" step="300"> gives 5‑minute increments, so
  *       10‑minute selections (10:40, 10:50, …) are also allowed.
  *     • Minutes must be a multiple of 5 → simple regex validation.
+ *
+ *      2025‑07‑23 — **New**: Cards with `busynessLevel === "unknown"`
+ *       are no longer rendered (early return `null`).
+ *       v8: early‑return moved **after** all hooks so hook
+ *       order remains consistent across renders (fixes React
+ *       "Rendered fewer hooks than expected" error).
  *********************************************************************/
 
 import React, { useState, useEffect } from 'react';
@@ -74,6 +80,11 @@ export default function PlaceCard({
     if (openMenu) window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [openMenu]);
+
+  /* ---------- Skip rendering if busyness is explicitly unknown ---------- */
+  if (busynessLevel === 'unknown') {
+    return null;
+  }
 
   /* ---------- Button Styling ---------- */
   const baseBtn  = 'min-w-[11rem] h-7 px-2 py-1 text-xs rounded whitespace-nowrap transition-colors';
@@ -215,19 +226,6 @@ export default function PlaceCard({
                   }
                 >
                   {saved ? 'Remove from Saved Places' : 'Add to Saved Places'}
-                </button>
-              )}
-
-              {/* ---Remove from My Itinerary button--- */}
-              {onRemove && selectedTime && (
-                <button
-                  onClick={() => {
-                    onRemove(place.id, selectedTime);
-                    setSelectedTime(null);
-                  }}
-                  className={`${baseBtn} bg-red-100 text-red-700 hover:bg-red-200`}
-                >
-                  Remove from My Itinerary
                 </button>
               )}
 
