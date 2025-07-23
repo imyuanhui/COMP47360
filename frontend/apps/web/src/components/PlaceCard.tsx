@@ -212,6 +212,21 @@ export default function PlaceCard({
                 </a>
               )}
 
+              {/* ---Remove from My Itinerary (My Itinerary view)--- */}
+              {hideItinerary && onRemove && (
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    // pass the time we know, but fall back gracefully
+                    const t = selectedTime ?? timeSlot;
+                    onRemove(place.id, t);
+                  }}
+                  className={`${baseBtn} bg-red-100 text-red-700 hover:bg-red-200`}
+                >
+                  Remove from My Itinerary
+                </button>
+              )}
+
               {/* ---Remove / Save buttons--- */}
               {onSave && (
                 <button
