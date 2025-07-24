@@ -41,7 +41,8 @@ You can run the full project locally in two ways:
 
 ### Option 1: Run all services via docker (recommended)
 
-Modify `docker/.env-example` to include your API keys and rename it to `.env`.
+- Modify `docker/.env-example` to include your API keys and rename it to `.env`.
+- Modify `frontend/apps/web/.env-example` to include your google map api and rename it to `.env`.
 
 #### 1. Clone the Repository
 
@@ -111,7 +112,8 @@ CSV HEADER;
 
 ### Option 2: Manual Run (Spring Boot + Flask + Frontend separately)
 
-Modify `backend/smarttrip/.env-example` with your API keys and rename it to `.env`.
+- Modify `backend/smarttrip/.env-example` with your API keys and rename it to `.env`.
+- Modify `frontend/apps/web/.env-example` to include your google map api and rename it to `.env`.
 
 #### 1. Run Flask ML API
 
