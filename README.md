@@ -184,6 +184,8 @@ server {
 > ⚠️ **Important:** Please avoid direct commits to `master`.  
 > All development should occur in `dev` or dedicated feature branches and be merged via Pull Request.
 
+> 📌 **The `dev` branch contains the full development history — including data processing scripts, internal documents like the team guide etc.**
+
 ---
 
 ## 🧪 Local Development Setup
